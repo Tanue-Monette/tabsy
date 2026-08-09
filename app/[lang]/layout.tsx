@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import { isValidLocale, type Locale } from "@/app/lib/i18n";
+import PwaInstallPrompt from "@/app/components/PwaInstallPrompt";
+import SyncStatusBadge from "@/app/components/SyncStatusBadge";
 import "../globals.css";
 
 export const metadata: Metadata = {
@@ -45,7 +47,11 @@ export default async function LangLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <PwaInstallPrompt />
+        <SyncStatusBadge />
+        {children}
+      </body>
     </html>
   );
 }

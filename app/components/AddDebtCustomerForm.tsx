@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { addDebtWithCustomer } from "@/app/actions/customers";
+import { queueOfflineTransaction } from "@/app/lib/syncEngine";
+import { useRouter } from "next/navigation";
 import type { Dictionary } from "@/app/lib/i18n";
 
 const QUICK_TAGS = ["Rice", "Sugar", "Soap", "Oil", "Flour", "Salt"];
@@ -12,14 +14,31 @@ type Props = {
 };
 
 export default function AddDebtCustomerForm({ id, t }: Props) {
+  const router = useRouter();
   const [state, action, pending] = useActionState(addDebtWithCustomer, undefined);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
 
   const isValid = Number(amount) > 0;
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (!navigator.onLine) {
+      e.preventDefault();
+      await queueOfflineTransaction("debt", {
+        customer_id: id,
+        amount: Number(amount),
+        description: description.trim() || undefined,
+      });
+      setOfflineMessage("Saved offline! Debt transaction queued to sync when internet returns.");
+      setTimeout(() => {
+        router.push(`/customers/${id}`);
+      }, 1500);
+    }
+  };
+
   return (
-    <form action={action} className="flex-grow flex flex-col">
+    <form action={action} onSubmit={handleSubmit} className="flex-grow flex flex-col">
       <input type="hidden" name="customer_id" value={id} />
 
       <main className="flex-grow px-6 -mt-4 pb-4">
@@ -100,6 +119,12 @@ export default function AddDebtCustomerForm({ id, t }: Props) {
             })}
           </div>
         </div>
+
+        {offlineMessage && (
+          <p className="mt-4 text-[#183524] font-bold text-sm text-center bg-emerald-100 border border-emerald-300 px-4 py-3 rounded-xl">
+            {offlineMessage}
+          </p>
+        )}
 
         {state?.message && (
           <p className="mt-4 text-[#ba1a1a] text-sm text-center bg-[#ffdad6] px-4 py-3 rounded-xl">

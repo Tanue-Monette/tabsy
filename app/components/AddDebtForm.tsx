@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { addDebtWithCustomer } from "@/app/actions/customers";
+import { queueOfflineTransaction } from "@/app/lib/syncEngine";
+import { useRouter } from "next/navigation";
 import type { Dictionary } from "@/app/lib/i18n";
 
 const QUICK_TAGS = ["Rice", "Sugar", "Soap", "Oil", "Flour", "Salt"];
@@ -12,15 +14,34 @@ type Props = {
 };
 
 export default function AddDebtForm({ lang, t }: Props) {
+  const router = useRouter();
   const [state, action, pending] = useActionState(addDebtWithCustomer, undefined);
   const [amount, setAmount] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [description, setDescription] = useState("");
+  const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
 
   const isValid = Number(amount) > 0 && name.trim().length >= 1;
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (!navigator.onLine) {
+      e.preventDefault();
+      await queueOfflineTransaction("add_debt_with_customer", {
+        new_name: name.trim(),
+        new_phone: phone.trim() || undefined,
+        amount: Number(amount),
+        description: description.trim() || undefined,
+      });
+      setOfflineMessage("Saved offline! Transaction queued to sync when internet returns.");
+      setTimeout(() => {
+        router.push(`/${lang}/customers`);
+      }, 1500);
+    }
+  };
+
   return (
-    <form action={action} className="flex-grow flex flex-col">
+    <form action={action} onSubmit={handleSubmit} className="flex-grow flex flex-col">
       <main className="flex-grow px-6 -mt-4 pb-4 space-y-4">
         <div className="bg-white rounded-xl p-6 shadow-sm space-y-6">
 
@@ -123,6 +144,12 @@ export default function AddDebtForm({ lang, t }: Props) {
             })}
           </div>
         </div>
+
+        {offlineMessage && (
+          <p className="text-[#183524] font-bold text-sm text-center bg-emerald-100 border border-emerald-300 px-4 py-3 rounded-xl">
+            {offlineMessage}
+          </p>
+        )}
 
         {state?.message && (
           <p className="text-[#ba1a1a] text-sm text-center bg-[#ffdad6] px-4 py-3 rounded-xl">

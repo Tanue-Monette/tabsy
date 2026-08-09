@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { recordPayment } from "@/app/actions/transactions";
+import { queueOfflineTransaction } from "@/app/lib/syncEngine";
+import { useRouter } from "next/navigation";
 import type { Dictionary } from "@/app/lib/i18n";
 
 type Props = {
@@ -10,14 +12,33 @@ type Props = {
 };
 
 export default function RecordPaymentForm({ id, t }: Props) {
+  const router = useRouter();
   const [method, setMethod] = useState<"cash" | "mtn" | "orange">("cash");
   const [amount, setAmount] = useState("");
+  const [reference, setReference] = useState("");
+  const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
   const [state, action, pending] = useActionState(recordPayment, undefined);
 
   const isValid = Number(amount) > 0;
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (!navigator.onLine) {
+      e.preventDefault();
+      await queueOfflineTransaction("payment", {
+        customer_id: id,
+        amount: Number(amount),
+        method,
+        reference: reference.trim() || undefined,
+      });
+      setOfflineMessage("Saved offline! Payment queued to sync when internet returns.");
+      setTimeout(() => {
+        router.push(`/customers/${id}`);
+      }, 1500);
+    }
+  };
+
   return (
-    <form action={action} className="flex-1 flex flex-col">
+    <form action={action} onSubmit={handleSubmit} className="flex-1 flex flex-col">
       <input type="hidden" name="customer_id" value={id} />
       <input type="hidden" name="method" value={method} />
 
@@ -92,11 +113,19 @@ export default function RecordPaymentForm({ id, t }: Props) {
             </h2>
             <input
               name="reference"
+              value={reference}
+              onChange={(e) => setReference(e.target.value)}
               className="w-full bg-[#e1e3e4] border-none rounded-xl py-4 px-5 text-[#191c1d] placeholder:text-[#424843]/40 focus:ring-2 focus:ring-[#183524]/20 transition-all"
               placeholder={t.referencePlaceholder}
               type="text"
             />
           </section>
+
+          {offlineMessage && (
+            <p className="text-[#183524] font-bold text-sm text-center bg-emerald-100 border border-emerald-300 px-4 py-3 rounded-xl">
+              {offlineMessage}
+            </p>
+          )}
 
           {state?.message && (
             <p className="text-[#ba1a1a] text-sm text-center bg-[#ffdad6] px-4 py-3 rounded-xl">
