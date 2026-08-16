@@ -142,6 +142,35 @@ export async function processOfflineQueueItem(
       if (balError) return { success: false, message: "Balance update failed." };
 
       revalidatePath(`/customers/${payload.customer_id}`);
+    } else if (type === "order") {
+      if (!payload.customer_id) {
+        return { success: false, message: "Missing customer_id." };
+      }
+      if (!payload.items || payload.items.length === 0) {
+        return { success: false, message: "Order has no items." };
+      }
+
+      const { data: orderId, error: orderError } = await supabase.rpc("create_order_as_debt", {
+        p_merchant_id: session.merchantId,
+        p_customer_id: payload.customer_id,
+        p_items: payload.items.map((i) => ({
+          stock_item_id: i.stock_item_id,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+        })),
+      });
+
+      if (orderError || !orderId) {
+        return {
+          success: false,
+          message: orderError?.message?.includes("Insufficient stock")
+            ? "Not enough stock for one or more items."
+            : "Failed to register order during sync.",
+        };
+      }
+
+      revalidatePath(`/customers/${payload.customer_id}`);
+      revalidatePath("/stock");
     }
 
     revalidatePath("/customers");

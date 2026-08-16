@@ -43,7 +43,7 @@ export async function getCustomerTransactions(customerId: string) {
 
   const { data } = await supabase
     .from("transactions")
-    .select("id, type, amount, description, method, created_at")
+    .select("id, customer_id, type, amount, description, method, created_at")
     .eq("customer_id", customerId)
     .eq("merchant_id", session.merchantId)
     .order("created_at", { ascending: false });

@@ -2,7 +2,7 @@ import Dexie, { type EntityTable } from "dexie";
 
 export interface OfflineSyncItem {
   id?: number;
-  type: "debt" | "payment" | "add_debt_with_customer";
+  type: "debt" | "payment" | "add_debt_with_customer" | "order";
   payload: {
     customer_id?: string;
     new_name?: string;
@@ -11,6 +11,7 @@ export interface OfflineSyncItem {
     description?: string;
     method?: string;
     reference?: string;
+    items?: { stock_item_id: string; quantity: number; unit_price: number; name?: string }[];
   };
   createdAt: number;
   status: "pending" | "synced" | "failed";

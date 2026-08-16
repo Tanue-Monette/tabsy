@@ -32,6 +32,7 @@ type Props = {
   t: Dictionary["customers"];
   debtDict: Dictionary["debt"];
   paymentDict: Dictionary["payment"];
+  orderDict: Dictionary["order"];
 };
 
 export default function CustomerDetailClient({
@@ -41,6 +42,7 @@ export default function CustomerDetailClient({
   t,
   debtDict,
   paymentDict,
+  orderDict,
 }: Props) {
   const serverTransactions: Transaction[] = rawTransactions.map((tx) => ({
     ...tx,
@@ -70,7 +72,9 @@ export default function CustomerDetailClient({
           .toArray();
 
         if (localTxs.length > 0) {
-          setTransactions(localTxs);
+          setTransactions(
+            localTxs.map((tx) => ({ ...tx, description: tx.description ?? null, method: tx.method ?? null }))
+          );
         }
       } catch (err) {
         console.error("Dexie read error in customer detail:", err);
@@ -128,11 +132,14 @@ export default function CustomerDetailClient({
             </span>
             <span className="text-lg font-bold text-zinc-400">FCFA</span>
           </div>
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <Link href={`/${lang}/customers/${customer.id}/add-debt`} className="flex flex-col items-center justify-center gap-2 bg-[#18181b] text-white py-3.5 rounded-2xl font-bold hover:bg-[#27272a] active:scale-95 transition-all text-xs">
+          <div className="grid grid-cols-3 gap-3 mt-6">
+            <Link href={`/${lang}/customers/${customer.id}/add-debt`} className="flex flex-col items-center justify-center gap-2 bg-[#18181b] text-white py-3.5 rounded-2xl font-bold hover:bg-[#27272a] active:scale-95 transition-all text-[11px]">
               <span className="material-symbols-outlined text-[#a3e635] text-xl">add_circle</span>{t.addDebt}
             </Link>
-            <Link href={`/${lang}/customers/${customer.id}/record-payment`} className="flex flex-col items-center justify-center gap-2 bg-[#a3e635] text-[#121212] py-3.5 rounded-2xl font-black hover:opacity-95 active:scale-95 transition-all text-xs shadow-md shadow-[#a3e635]/20">
+            <Link href={`/${lang}/new-order?customer=${customer.id}`} className="flex flex-col items-center justify-center gap-2 bg-zinc-100 text-[#18181b] py-3.5 rounded-2xl font-bold hover:bg-zinc-200 active:scale-95 transition-all text-[11px] border border-zinc-200/80">
+              <span className="material-symbols-outlined text-xl">receipt_long</span>{orderDict.newOrder}
+            </Link>
+            <Link href={`/${lang}/customers/${customer.id}/record-payment`} className="flex flex-col items-center justify-center gap-2 bg-[#a3e635] text-[#121212] py-3.5 rounded-2xl font-black hover:opacity-95 active:scale-95 transition-all text-[11px] shadow-md shadow-[#a3e635]/20">
               <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>payments</span>{t.recordPayment}
             </Link>
           </div>

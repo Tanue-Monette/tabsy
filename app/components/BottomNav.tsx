@@ -12,6 +12,7 @@ export default function BottomNav({ lang, t }: Props) {
   const navItems = [
     { href: `/${lang}/dashboard`, icon: "dashboard", label: t.dashboard },
     { href: `/${lang}/customers`, icon: "group", label: t.customers },
+    { href: `/${lang}/stock`, icon: "inventory_2", label: t.stock },
     { href: `/${lang}/transactions`, icon: "receipt_long", label: t.transactions },
     { href: `/${lang}/settings`, icon: "settings", label: t.settings },
   ];
@@ -24,7 +25,7 @@ export default function BottomNav({ lang, t }: Props) {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center justify-center px-5 py-2 transition-all duration-200 active:scale-95 rounded-2xl ${
+            className={`flex flex-col items-center justify-center px-3 py-2 transition-all duration-200 active:scale-95 rounded-2xl ${
               isActive ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10 font-bold" : "text-zinc-400 hover:text-zinc-600"
             }`}
           >

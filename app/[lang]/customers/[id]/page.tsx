@@ -27,6 +27,7 @@ export default async function CustomerDetailPage({
       t={t.customers}
       debtDict={t.debt}
       paymentDict={t.payment}
+      orderDict={t.order}
     />
   );
 }

@@ -105,7 +105,11 @@ export async function queueOfflineTransaction(
       customer_id: tempCustId,
       type: type === "payment" ? "payment" : "debt",
       amount: payload.amount,
-      description: payload.description ?? payload.reference ?? null,
+      description:
+        payload.description ??
+        payload.reference ??
+        (type === "order" ? `Order (${payload.items?.length ?? 0} item${(payload.items?.length ?? 0) === 1 ? "" : "s"})` : undefined) ??
+        null,
       method: payload.method ?? null,
       created_at: nowIso,
       isPending: true,
