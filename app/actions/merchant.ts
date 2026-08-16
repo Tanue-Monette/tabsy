@@ -36,7 +36,7 @@ export async function updateSettings(formData: FormData) {
     .eq("id", session.merchantId)
     .single();
 
-  const prevSettings = (existingMerchant?.settings as Record<string, any>) ?? {};
+  const prevSettings = (existingMerchant?.settings as Record<string, unknown>) ?? {};
 
   const settings = {
     ...prevSettings,
@@ -53,7 +53,10 @@ export async function updateSettings(formData: FormData) {
     .update({ settings })
     .eq("id", session.merchantId);
 
-  if (error) return { message: "Failed to save settings." };
+  if (error) {
+    console.error("Failed to save settings:", error);
+    return;
+  }
 
   revalidatePath("/settings");
   revalidatePath("/customers");

@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import { getSession } from "@/app/lib/session";
 import type { OfflineSyncItem } from "@/app/lib/db";
@@ -25,7 +24,7 @@ export async function processOfflineQueueItem(
       .eq("id", session.merchantId)
       .single();
 
-    const maxDebtLimit = Number(merchantData?.settings?.max_debt_limit ?? 0);
+    const maxDebtLimit = Number((merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0);
 
     if (type === "add_debt_with_customer") {
       let resolvedCustomerId = payload.customer_id;
@@ -52,6 +51,18 @@ export async function processOfflineQueueItem(
         return { success: false, message: "Missing customer identifier." };
       }
 
+      if (maxDebtLimit > 0) {
+        const { data: custData } = await supabase
+          .from("customers")
+          .select("balance")
+          .eq("id", resolvedCustomerId)
+          .single();
+        const currentBal = Number(custData?.balance ?? 0);
+        if (currentBal + payload.amount > maxDebtLimit) {
+          return { success: false, message: `Debt limit exceeded (${maxDebtLimit.toLocaleString()} FCFA max)` };
+        }
+      }
+
       const { error: txError } = await supabase.from("transactions").insert({
         merchant_id: session.merchantId,
         customer_id: resolvedCustomerId,
@@ -74,6 +85,18 @@ export async function processOfflineQueueItem(
     } else if (type === "debt") {
       if (!payload.customer_id) {
         return { success: false, message: "Missing customer_id." };
+      }
+
+      if (maxDebtLimit > 0) {
+        const { data: custData } = await supabase
+          .from("customers")
+          .select("balance")
+          .eq("id", payload.customer_id)
+          .single();
+        const currentBal = Number(custData?.balance ?? 0);
+        if (currentBal + payload.amount > maxDebtLimit) {
+          return { success: false, message: `Debt limit exceeded (${maxDebtLimit.toLocaleString()} FCFA max)` };
+        }
       }
 
       const { error: txError } = await supabase.from("transactions").insert({
@@ -124,7 +147,8 @@ export async function processOfflineQueueItem(
     revalidatePath("/customers");
     revalidatePath("/dashboard");
     return { success: true };
-  } catch (err: any) {
-    return { success: false, message: err?.message ?? "An unexpected error occurred during sync." };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "An unexpected error occurred during sync.";
+    return { success: false, message };
   }
 }

@@ -90,6 +90,8 @@ export default function AddDebtForm({ lang, t }: Props) {
               name="new_phone"
               type="tel"
               placeholder={t.phoneOptional}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
             />
           </div>

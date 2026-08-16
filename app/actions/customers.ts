@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import { getSession } from "@/app/lib/session";
-import { CustomerSchema, type ActionState } from "@/app/lib/definitions";
+import { type ActionState } from "@/app/lib/definitions";
 import { z } from "zod";
 
 async function requireSession() {

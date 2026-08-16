@@ -1,14 +1,8 @@
 "use client";
 
-import { useState, use } from "react";
-import Link from "next/link";
+import { useState } from "react";
 
-export default function CheckoutPage({
-  params,
-}: {
-  params: Promise<{ lang: string }>;
-}) {
-  const { lang } = use(params);
+export default function CheckoutPage() {
   const [provider, setProvider] = useState<"mtn" | "orange">("mtn");
 
   return (

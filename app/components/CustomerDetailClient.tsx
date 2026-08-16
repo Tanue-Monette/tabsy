@@ -16,17 +16,18 @@ type Customer = {
 
 type Transaction = {
   id: string;
+  customer_id: string;
   type: "debt" | "payment";
   amount: number;
-  description: string | null;
-  method: string | null;
+  description?: string | null;
+  method?: string | null;
   created_at: string;
   isPending?: boolean;
 };
 
 type Props = {
   customer: Customer;
-  transactions: Transaction[];
+  transactions: Omit<Transaction, "customer_id">[];
   lang: string;
   t: Dictionary["customers"];
   debtDict: Dictionary["debt"];
@@ -35,12 +36,17 @@ type Props = {
 
 export default function CustomerDetailClient({
   customer: serverCustomer,
-  transactions: serverTransactions,
+  transactions: rawTransactions,
   lang,
   t,
   debtDict,
   paymentDict,
 }: Props) {
+  const serverTransactions: Transaction[] = rawTransactions.map((tx) => ({
+    ...tx,
+    customer_id: serverCustomer.id,
+  }));
+
   const [customer, setCustomer] = useState(serverCustomer);
   const [transactions, setTransactions] = useState<Transaction[]>(serverTransactions);
 
