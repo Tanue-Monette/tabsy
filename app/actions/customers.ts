@@ -87,6 +87,35 @@ export async function addDebtWithCustomer(
     return { errors: { new_name: ["Please select a customer or enter a name."] } };
   }
 
+  // Check merchant max debt limit settings
+  const { data: merchantData } = await supabase
+    .from("merchants")
+    .select("settings")
+    .eq("id", session.merchantId)
+    .single();
+
+  const maxDebtLimit = Number(merchantData?.settings?.max_debt_limit ?? 0);
+
+  let currentBalance = 0;
+  if (customer_id) {
+    const { data: existingCustomer } = await supabase
+      .from("customers")
+      .select("balance")
+      .eq("id", customer_id)
+      .single();
+    currentBalance = Number(existingCustomer?.balance ?? 0);
+  }
+
+  if (maxDebtLimit > 0 && currentBalance + amount > maxDebtLimit) {
+    return {
+      errors: {
+        amount: [
+          `Debt limit exceeded! Maximum allowed debt is ${maxDebtLimit.toLocaleString()} FCFA (Current debt: ${currentBalance.toLocaleString()} FCFA).`,
+        ],
+      },
+    };
+  }
+
   let resolvedCustomerId = customer_id;
 
   // New customer — create them first

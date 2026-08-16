@@ -76,14 +76,14 @@ export default function PwaInstallPrompt() {
   if (!showPrompt || isStandalone) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#183524] text-white p-4 rounded-2xl shadow-2xl z-50 ring-1 ring-white/10 flex items-center justify-between gap-3">
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-[#18181b] text-white p-4 rounded-3xl shadow-2xl z-50 border border-zinc-800 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="w-12 h-12 rounded-xl bg-[#2f4c39] border border-white/20 flex items-center justify-center shrink-0">
-          <span className="material-symbols-outlined text-[#9bbca3] text-2xl">add_to_home_screen</span>
+        <div className="w-12 h-12 rounded-2xl bg-[#27272a] border border-zinc-700/50 flex items-center justify-center shrink-0">
+          <span className="material-symbols-outlined text-[#a3e635] text-2xl">add_to_home_screen</span>
         </div>
         <div className="min-w-0">
-          <h4 className="font-bold text-sm leading-tight truncate">Install Tabsy App</h4>
-          <p className="text-xs text-[#9bbca3] leading-tight mt-0.5">
+          <h4 className="font-extrabold text-sm leading-tight truncate">Install Tabsy App</h4>
+          <p className="text-xs text-zinc-400 font-medium leading-tight mt-0.5">
             {isIos ? "Tap Share ➔ 'Add to Home Screen'" : "Add to home screen for fast access"}
           </p>
         </div>
@@ -93,14 +93,14 @@ export default function PwaInstallPrompt() {
         {!isIos && deferredPrompt && (
           <button
             onClick={handleInstallClick}
-            className="px-3.5 py-2 bg-[#fd761a] text-[#341100] text-xs font-black rounded-xl hover:opacity-90 active:scale-95 transition-all"
+            className="px-4 py-2 bg-[#a3e635] text-[#121212] text-xs font-black rounded-xl hover:opacity-95 active:scale-95 transition-all shadow-md shadow-[#a3e635]/20"
           >
             Install
           </button>
         )}
         <button
           onClick={handleDismiss}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-white/70"
+          className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-zinc-800 text-zinc-400"
           aria-label="Close"
         >
           <span className="material-symbols-outlined text-lg">close</span>

@@ -137,6 +137,9 @@
     "debtRemindersSub": "Alert for customer credit",
     "weeklyReports": "Weekly Reports",
     "weeklyReportsSub": "Summary of shop performance",
+    "creditControls": "Credit Controls",
+    "maxDebtLimit": "Max Debt Limit per Customer",
+    "maxDebtLimitSub": "Maximum debt balance allowed (FCFA)",
     "appVersion": "App Version 2.4.0 • Built for Merchants"
   },
   "common": {

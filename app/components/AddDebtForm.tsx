@@ -42,12 +42,12 @@ export default function AddDebtForm({ lang, t }: Props) {
 
   return (
     <form action={action} onSubmit={handleSubmit} className="flex-grow flex flex-col">
-      <main className="flex-grow px-6 -mt-4 pb-4 space-y-4">
-        <div className="bg-white rounded-xl p-6 shadow-sm space-y-6">
+      <main className="flex-grow px-6 pt-4 pb-4 space-y-4">
+        <div className="bg-white rounded-3xl p-6 shadow-sm border border-zinc-200/80 space-y-6">
 
           {/* Amount */}
-          <div className="text-center">
-            <label className="block text-sm font-medium text-[#424843] mb-2" htmlFor="amount">
+          <div className="text-left">
+            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2" htmlFor="amount">
               {t.debtAmount}
             </label>
             <div className="inline-flex items-baseline justify-center w-full">
@@ -60,19 +60,19 @@ export default function AddDebtForm({ lang, t }: Props) {
                 min="1"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full text-center text-6xl font-extrabold tracking-tighter bg-transparent border-none focus:ring-0 text-[#183524] p-0"
+                className="w-full text-center text-6xl font-black tracking-tighter bg-transparent border-none focus:ring-0 text-[#18181b] p-0"
               />
-              <span className="ml-2 text-2xl font-bold text-[#191c1d]/40">FCFA</span>
+              <span className="ml-2 text-xl font-black text-[#a3e635]">FCFA</span>
             </div>
             {state?.errors?.amount && (
-              <p className="text-[#ba1a1a] text-xs mt-2">{state.errors.amount[0]}</p>
+              <p className="text-rose-600 text-xs mt-2">{state.errors.amount[0]}</p>
             )}
-            <div className="h-1 w-24 bg-[#fd761a] mx-auto mt-3 rounded-full opacity-50" />
+            <div className="h-1 w-full bg-[#a3e635] mx-auto mt-3 rounded-full" />
           </div>
 
           {/* New customer fields */}
           <div className="space-y-3">
-            <label className="block text-xs font-bold text-[#424843] uppercase tracking-widest px-1">
+            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest px-1">
               {t.customer}
             </label>
             <input
@@ -81,30 +81,30 @@ export default function AddDebtForm({ lang, t }: Props) {
               placeholder={t.customerName}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full h-14 px-4 bg-[#e1e3e4] border-none rounded-xl focus:ring-2 focus:ring-[#183524]/20 focus:bg-white transition-all placeholder:text-[#424843]/60"
+              className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
             />
             {state?.errors?.new_name && (
-              <p className="text-[#ba1a1a] text-xs ml-1">{state.errors.new_name[0]}</p>
+              <p className="text-rose-600 text-xs ml-1">{state.errors.new_name[0]}</p>
             )}
             <input
               name="new_phone"
               type="tel"
               placeholder={t.phoneOptional}
-              className="w-full h-14 px-4 bg-[#e1e3e4] border-none rounded-xl focus:ring-2 focus:ring-[#183524]/20 focus:bg-white transition-all placeholder:text-[#424843]/60"
+              className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-bold text-[#424843] uppercase tracking-widest mb-2 px-1">
+            <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2 px-1">
               {t.descriptionOptional}
             </label>
-            <div className="bg-[#e1e3e4] rounded-xl px-4 py-4">
+            <div className="bg-zinc-100 rounded-2xl px-4 py-4">
               <input
                 name="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-transparent border-none focus:ring-0 text-[#191c1d] font-medium w-full p-0 placeholder:text-[#727972]/50"
+                className="bg-transparent border-none focus:ring-0 text-[#18181b] font-medium w-full p-0 placeholder:text-zinc-400"
                 placeholder={t.descriptionPlaceholder}
                 type="text"
               />
@@ -135,7 +135,7 @@ export default function AddDebtForm({ lang, t }: Props) {
                         : prev ? `${prev}, ${tag}` : tag
                     );
                   }}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${active ? "bg-[#183524] text-white" : "bg-[#edeeef] text-[#424843]"
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-colors ${active ? "bg-[#18181b] text-[#a3e635]" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
                     }`}
                 >
                   {tag}
@@ -146,32 +146,32 @@ export default function AddDebtForm({ lang, t }: Props) {
         </div>
 
         {offlineMessage && (
-          <p className="text-[#183524] font-bold text-sm text-center bg-emerald-100 border border-emerald-300 px-4 py-3 rounded-xl">
+          <p className="text-[#18181b] font-bold text-sm text-center bg-[#a3e635]/20 border border-[#a3e635] px-4 py-3 rounded-2xl">
             {offlineMessage}
           </p>
         )}
 
         {state?.message && (
-          <p className="text-[#ba1a1a] text-sm text-center bg-[#ffdad6] px-4 py-3 rounded-xl">
+          <p className="text-rose-600 text-sm text-center bg-rose-50 border border-rose-100 px-4 py-3 rounded-2xl">
             {state.message}
           </p>
         )}
 
-        <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-100 rounded-xl">
-          <span className="material-symbols-outlined text-[#9d4300]">info</span>
-          <p className="text-xs text-[#5c2400] leading-relaxed">
+        <div className="flex items-center gap-3 p-4 bg-zinc-100 border border-zinc-200/80 rounded-2xl">
+          <span className="material-symbols-outlined text-[#18181b]">info</span>
+          <p className="text-xs text-zinc-600 leading-relaxed font-medium">
             {t.infoNew}
           </p>
         </div>
       </main>
 
-      <footer className="p-6 bg-white">
+      <footer className="p-6 bg-white border-t border-zinc-100">
         <button
           type="submit"
           disabled={pending || !isValid}
-          className="w-full py-5 bg-gradient-to-r from-[#183524] to-[#2f4c39] text-white rounded-xl font-bold text-lg shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-4 bg-[#18181b] hover:bg-[#27272a] text-white rounded-2xl font-extrabold text-base shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <span className="material-symbols-outlined">save</span>
+          <span className="material-symbols-outlined text-[#a3e635]">save</span>
           {pending ? t.saving : t.saveDebt}
         </button>
       </footer>

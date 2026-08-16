@@ -17,24 +17,24 @@ export default function BottomNav({ lang, t }: Props) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.08)] rounded-t-3xl">
+    <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/90 backdrop-blur-md shadow-[0_-4px_20px_rgba(0,0,0,0.06)] border-t border-zinc-200/80 rounded-t-3xl">
       {navItems.map((item) => {
         const isActive = pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center justify-center px-6 py-2 transition-all duration-200 scale-95 active:scale-90 rounded-2xl ${
-              isActive ? "bg-orange-100 text-orange-800" : "text-slate-500"
+            className={`flex flex-col items-center justify-center px-5 py-2 transition-all duration-200 active:scale-95 rounded-2xl ${
+              isActive ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10 font-bold" : "text-zinc-400 hover:text-zinc-600"
             }`}
           >
             <span
-              className="material-symbols-outlined mb-1"
+              className="material-symbols-outlined mb-0.5 text-xl"
               style={isActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
             >
               {item.icon}
             </span>
-            <span className="text-[10px] font-medium">{item.label}</span>
+            <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
           </Link>
         );
       })}

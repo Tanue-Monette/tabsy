@@ -12,50 +12,51 @@ export default async function ForgotPinPage({
   const t = await getDictionary(lang as Locale);
 
   return (
-    <div className="flex flex-col min-h-screen text-[#191c1d]">
-      <header className="flex items-center w-full px-6 py-10 bg-emerald-950">
-        <Link href={`/${lang}`} className="flex items-center justify-center transition-opacity duration-200 active:opacity-80 hover:bg-emerald-900/50 p-2 rounded-full">
-          <span className="material-symbols-outlined text-emerald-50">arrow_back</span>
+    <div className="flex flex-col min-h-screen text-[#18181b] bg-[#f8f9fa]">
+      <header className="flex items-center w-full px-6 py-4 bg-[#18181b] shadow-lg border-b border-zinc-800/50">
+        <Link href={`/${lang}`} className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-white transition-colors border border-zinc-700/40">
+          <span className="material-symbols-outlined text-lg">arrow_back</span>
         </Link>
-        <span className="ml-4 text-emerald-50 font-bold text-xl tracking-tight">Tabsy</span>
+        <span className="ml-4 text-white font-black text-xl tracking-tighter">Tabsy</span>
       </header>
 
       <main className="flex-grow flex flex-col items-center justify-center px-6 py-12 max-w-md mx-auto w-full">
-        <div className="w-full mb-12 text-center">
-          <div className="mb-6 inline-flex items-center justify-center w-16 h-16 bg-[#2f4c39] rounded-2xl">
-            <span className="material-symbols-outlined text-[#c9ebd1] text-3xl">lock_reset</span>
+        <div className="w-full mb-8 text-center">
+          <div className="mb-4 inline-flex items-center justify-center w-16 h-16 bg-[#18181b] border border-zinc-800 rounded-2xl">
+            <span className="material-symbols-outlined text-[#a3e635] text-3xl">lock_reset</span>
           </div>
-          <h1 className="text-[1.75rem] font-extrabold text-[#183524] mb-3">{t.auth.forgotPinTitle}</h1>
-          <p className="text-[#424843] leading-relaxed px-4">{t.auth.forgotPinDesc}</p>
+          <h1 className="text-2xl font-black text-[#18181b] mb-2">{t.auth.forgotPinTitle}</h1>
+          <p className="text-zinc-500 text-sm leading-relaxed px-2 font-medium">{t.auth.forgotPinDesc}</p>
         </div>
 
-        <div className="w-full space-y-8">
+        <div className="w-full space-y-6">
           <div className="space-y-2">
-            <label className="block font-medium text-[#424843] ml-1 uppercase tracking-wider text-[0.6875rem]" htmlFor="phone-number">
+            <label className="block font-bold text-zinc-400 uppercase tracking-widest text-[10px] ml-1" htmlFor="phone-number">
               {t.auth.phoneNumber}
             </label>
-            <div className="flex items-center bg-[#e1e3e4] rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#183524]/20 transition-all">
-              <div className="flex items-center px-4 py-4 border-r border-[#c2c8c1]/30 text-[#191c1d] font-semibold">
-                <span className="text-[#424843] mr-2 text-sm">🇨🇲</span>
+            <div className="flex items-center bg-zinc-100 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-[#18181b] transition-all">
+              <div className="flex items-center px-4 py-4 border-r border-zinc-200 text-[#18181b] font-bold text-sm">
+                <span className="text-zinc-500 mr-2 text-sm">🇨🇲</span>
                 <span>+237</span>
               </div>
-              <input className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 text-[#191c1d] font-medium placeholder:text-[#424843]/40" id="phone-number" placeholder="6XX XXX XXX" type="tel" />
+              <input className="w-full bg-transparent border-none focus:ring-0 py-4 px-4 text-[#18181b] font-medium placeholder:text-zinc-400" id="phone-number" placeholder="6XX XXX XXX" type="tel" />
             </div>
           </div>
 
-          <Link href={`/${lang}/reset-pin`} className="w-full py-5 bg-gradient-to-r from-[#183524] to-[#2f4c39] text-white font-bold text-lg rounded-xl shadow-lg shadow-[#183524]/10 transition-transform active:scale-95 flex items-center justify-center">
-            {t.auth.sendResetCode}
+          <Link href={`/${lang}/reset-pin`} className="w-full py-4 bg-[#18181b] hover:bg-[#27272a] text-white font-extrabold text-base rounded-2xl shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+            <span>{t.auth.sendResetCode}</span>
+            <span className="material-symbols-outlined text-[#a3e635] text-xl">arrow_forward</span>
           </Link>
 
           <div className="text-center">
-            <Link href={`/${lang}`} className="font-semibold text-[#183524] py-2 px-6 hover:bg-[#183524]/5 rounded-full transition-colors">{t.auth.backToLogin}</Link>
+            <Link href={`/${lang}`} className="font-extrabold text-[#18181b] py-2 px-6 hover:bg-zinc-200/50 rounded-full transition-colors text-xs">{t.auth.backToLogin}</Link>
           </div>
         </div>
 
-        <div className="mt-auto pt-16 text-center">
-          <div className="inline-flex items-center space-x-2 text-[#424843]/60">
-            <span className="material-symbols-outlined text-sm">verified_user</span>
-            <span className="text-[0.6875rem] font-medium">{t.auth.encryptedConnection}</span>
+        <div className="mt-auto pt-12 text-center">
+          <div className="inline-flex items-center space-x-2 text-zinc-400">
+            <span className="material-symbols-outlined text-sm text-[#18181b]">verified_user</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider">{t.auth.encryptedConnection}</span>
           </div>
         </div>
       </main>

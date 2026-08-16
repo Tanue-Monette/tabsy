@@ -16,15 +16,15 @@ export default function LoginForm({ lang, t }: Props) {
   const isValid = phoneDigits.length >= 9 && pin.length === 4;
 
   return (
-    <form action={action} className="w-full space-y-8">
+    <form action={action} className="w-full space-y-6">
       <input type="hidden" name="lang" value={lang} />
-      <div className="space-y-6">
+      <div className="space-y-5">
         <div className="flex flex-col gap-2">
-          <label className="text-[0.6875rem] font-semibold uppercase tracking-widest text-[#424843] ml-1">
+          <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 ml-1">
             {t.phoneNumber}
           </label>
           <div className="flex gap-2">
-            <div className="h-14 px-3 flex items-center bg-[#e1e3e4] rounded-xl text-[#424843] font-medium text-sm">+237</div>
+            <div className="h-14 px-4 flex items-center bg-zinc-100 rounded-2xl text-zinc-600 font-bold text-sm border border-zinc-200/80">+237</div>
             <input
               name="phone"
               type="tel"
@@ -32,16 +32,16 @@ export default function LoginForm({ lang, t }: Props) {
               placeholder="6XX XXX XXX"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="flex-1 h-14 px-5 bg-[#e1e3e4] border-none rounded-xl text-[#191c1d] placeholder:text-[#424843]/50 focus:ring-2 focus:ring-[#2f4c39]/20 font-medium"
+              className="flex-1 h-14 px-5 bg-zinc-100 border-none rounded-2xl text-[#18181b] placeholder:text-zinc-400 focus:ring-2 focus:ring-[#18181b] focus:bg-white font-medium transition-all"
             />
           </div>
-          {state?.errors?.phone && <p className="text-[#ba1a1a] text-xs ml-1">{state.errors.phone[0]}</p>}
+          {state?.errors?.phone && <p className="text-rose-600 text-xs ml-1 font-semibold">{state.errors.phone[0]}</p>}
         </div>
 
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center ml-1">
-            <label className="text-[0.6875rem] font-semibold uppercase tracking-widest text-[#424843]">{t.securityPin}</label>
-            <Link href={`/${lang}/forgot-pin`} className="text-[0.6875rem] font-semibold uppercase tracking-widest text-[#9d4300]">{t.forgotPin}</Link>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{t.securityPin}</label>
+            <Link href={`/${lang}/forgot-pin`} className="text-[10px] font-bold uppercase tracking-widest text-[#18181b] hover:text-[#a3e635] transition-colors">{t.forgotPin}</Link>
           </div>
           <div className="relative">
             <input
@@ -52,25 +52,25 @@ export default function LoginForm({ lang, t }: Props) {
               placeholder="••••"
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              className="w-full h-14 px-5 bg-[#e1e3e4] border-none rounded-xl text-[#191c1d] placeholder:text-[#424843]/50 focus:ring-2 focus:ring-[#2f4c39]/20 font-medium tracking-[0.5em] text-xl"
+              className="w-full h-14 px-5 bg-zinc-100 border-none rounded-2xl text-[#18181b] placeholder:text-zinc-400 focus:ring-2 focus:ring-[#18181b] focus:bg-white font-medium tracking-[0.5em] text-xl transition-all"
             />
-            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-[#424843]">visibility_off</span>
+            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400">visibility_off</span>
           </div>
-          {state?.errors?.pin && <p className="text-[#ba1a1a] text-xs ml-1">{state.errors.pin[0]}</p>}
+          {state?.errors?.pin && <p className="text-rose-600 text-xs ml-1 font-semibold">{state.errors.pin[0]}</p>}
         </div>
       </div>
 
       {state?.message && (
-        <p className="text-[#ba1a1a] text-sm text-center bg-[#ffdad6] px-4 py-3 rounded-xl">{state.message}</p>
+        <p className="text-rose-600 text-sm text-center bg-rose-50 border border-rose-100 px-4 py-3 rounded-2xl font-medium">{state.message}</p>
       )}
 
       <button
         type="submit"
         disabled={pending || !isValid}
-        className="w-full h-14 bg-gradient-to-r from-[#183524] to-[#2f4c39] text-white font-bold rounded-xl shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full h-14 bg-[#18181b] hover:bg-[#27272a] text-white font-extrabold rounded-2xl shadow-xl active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <span>{pending ? t.loggingIn : t.login}</span>
-        {!pending && <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>}
+        {!pending && <span className="material-symbols-outlined text-[#a3e635] group-hover:translate-x-1 transition-transform">arrow_forward</span>}
       </button>
     </form>
   );

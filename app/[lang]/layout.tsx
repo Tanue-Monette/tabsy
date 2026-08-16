@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#183524",
+  themeColor: "#18181b",
   width: "device-width",
   initialScale: 1,
 };
@@ -48,9 +48,9 @@ export default async function LangLayout({
         />
       </head>
       <body>
-        <PwaInstallPrompt />
         <SyncStatusBadge />
         {children}
+        <PwaInstallPrompt />
       </body>
     </html>
   );

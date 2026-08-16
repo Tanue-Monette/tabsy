@@ -55,9 +55,9 @@ export default function SyncStatusBadge() {
   return (
     <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom duration-300">
       {!isOnline && (
-        <div className="bg-[#9d4300] text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold flex items-center gap-2 border border-white/20">
+        <div className="bg-[#18181b] text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 border border-zinc-700">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-          <span className="material-symbols-outlined text-sm">wifi_off</span>
+          <span className="material-symbols-outlined text-sm text-amber-400">wifi_off</span>
           <span>
             {pendingCount > 0
               ? `Offline — ${pendingCount} change${pendingCount > 1 ? "s" : ""} queued`
@@ -67,17 +67,17 @@ export default function SyncStatusBadge() {
       )}
 
       {isOnline && pendingCount > 0 && (
-        <div className="bg-[#183524] text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold flex items-center gap-2 border border-emerald-500/30">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+        <div className="bg-[#18181b] text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 border border-zinc-700">
+          <span className="w-2 h-2 rounded-full bg-[#a3e635] animate-pulse" />
+          <span className="material-symbols-outlined text-sm animate-spin text-[#a3e635]">sync</span>
           <span>Syncing {pendingCount} item{pendingCount > 1 ? "s" : ""} to database...</span>
         </div>
       )}
 
       {isOnline && pendingCount === 0 && syncedRecently && (
-        <div className="bg-emerald-800 text-white px-4 py-2 rounded-full shadow-lg text-xs font-bold flex items-center gap-2 border border-emerald-400/30">
-          <span className="material-symbols-outlined text-sm text-emerald-300">check_circle</span>
-          <span>All offline changes saved to Supabase!</span>
+        <div className="bg-[#18181b] text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 border border-zinc-700">
+          <span className="material-symbols-outlined text-sm text-[#a3e635]">check_circle</span>
+          <span>All offline changes saved!</span>
         </div>
       )}
     </div>

@@ -19,6 +19,14 @@ export async function processOfflineQueueItem(
     const session = await requireSession();
     const { type, payload } = item;
 
+    const { data: merchantData } = await supabase
+      .from("merchants")
+      .select("settings")
+      .eq("id", session.merchantId)
+      .single();
+
+    const maxDebtLimit = Number(merchantData?.settings?.max_debt_limit ?? 0);
+
     if (type === "add_debt_with_customer") {
       let resolvedCustomerId = payload.customer_id;
 

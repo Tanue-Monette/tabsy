@@ -17,13 +17,49 @@ export interface OfflineSyncItem {
   errorMessage?: string;
 }
 
+export interface CachedCustomer {
+  id: string;
+  name: string;
+  phone: string | null;
+  balance: number;
+  isPending?: boolean;
+  updatedAt?: number;
+}
+
+export interface CachedTransaction {
+  id: string;
+  customer_id: string;
+  type: "debt" | "payment";
+  amount: number;
+  description?: string | null;
+  method?: string | null;
+  created_at: string;
+  isPending?: boolean;
+}
+
+export interface CachedMerchantSettings {
+  id: string;
+  max_debt_limit?: number;
+  cash_enabled?: boolean;
+  mtn_enabled?: boolean;
+  orange_enabled?: boolean;
+  debt_reminders?: boolean;
+  weekly_reports?: boolean;
+}
+
 export class TabsyOfflineDB extends Dexie {
   offlineSyncQueue!: EntityTable<OfflineSyncItem, "id">;
+  cachedCustomers!: EntityTable<CachedCustomer, "id">;
+  cachedTransactions!: EntityTable<CachedTransaction, "id">;
+  merchantSettings!: EntityTable<CachedMerchantSettings, "id">;
 
   constructor() {
     super("TabsyOfflineDB");
-    this.version(1).stores({
+    this.version(2).stores({
       offlineSyncQueue: "++id, type, status, createdAt",
+      cachedCustomers: "id, name, balance, isPending, updatedAt",
+      cachedTransactions: "id, customer_id, type, created_at, isPending",
+      merchantSettings: "id",
     });
   }
 }

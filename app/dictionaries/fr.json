@@ -137,6 +137,9 @@
     "debtRemindersSub": "Alerte pour le crédit client",
     "weeklyReports": "Rapports hebdomadaires",
     "weeklyReportsSub": "Résumé des performances de la boutique",
+    "creditControls": "Contrôles de crédit",
+    "maxDebtLimit": "Plafond de dette par client",
+    "maxDebtLimitSub": "Solde de dette maximum autorisé (FCFA)",
     "appVersion": "Version 2.4.0 • Pour les marchands"
   },
   "common": {
