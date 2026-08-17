@@ -198,7 +198,18 @@
     "livePosRevenue": "Chiffre d'affaires POS en direct",
     "totalStockAssetValue": "Valeur totale des actifs en stock",
     "itemsNeedRestocking": "articles nécessitent un réapprovisionnement",
-    "itemNeedsRestocking": "article nécessite un réapprovisionnement"
+    "itemNeedsRestocking": "article nécessite un réapprovisionnement",
+    "editItem": "Modifier l'article",
+    "saveChanges": "Enregistrer les modifications",
+    "editQuantityHint": "réapprovisionnez pour changer la quantité",
+    "packsLabel": "Emballages (optionnel)",
+    "packsHint": "Pour les articles vendus en lot, ex. une Caisse = 24 bouteilles",
+    "addPack": "Ajouter un emballage",
+    "noPacks": "Aucun emballage — cet article se vend uniquement à l'unité.",
+    "packNamePlaceholder": "Nom, ex. Caisse",
+    "packSizePlaceholder": "Taille",
+    "enterQuantityAs": "Saisir la quantité en",
+    "costPerUnit": "Coût par {unit}"
   },
   "order": {
     "title": "Nouvelle vente POS",

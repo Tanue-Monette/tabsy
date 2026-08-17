@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import { getSession } from "@/app/lib/session";
 import { CreateOrderSchema, type ActionState } from "@/app/lib/definitions";
-import { getLocaleFromCookie } from "@/app/lib/i18n-config";
+import { getLocaleFromCookie } from "@/app/lib/get-locale";
 
 async function requireSession() {
   const session = await getSession();

@@ -54,10 +54,39 @@ export const StockItemSchema = z.object({
   low_stock_threshold: z.coerce.number().min(0).default(5),
 });
 
+// A pack is just a named shortcut for "N base units" (e.g. "Crate" = 24
+// bottles). Stock is always stored/deducted in base units — packs never
+// carry their own price or their own stock count.
+export const StockItemPackSchema = z.object({
+  name: z.string().min(1, "Pack name is required").trim(),
+  size: z.coerce.number().positive("Pack size must be greater than 0"),
+});
+
+export const StockItemPacksSchema = z
+  .array(StockItemPackSchema)
+  .max(10, "Too many packs")
+  .refine(
+    (packs) => new Set(packs.map((p) => p.name.toLowerCase())).size === packs.length,
+    { message: "Pack names must be unique" }
+  );
+
+// Editing an item never touches quantity directly — quantity only ever
+// changes through a stock_movements row (restock/sale/adjustment), so the
+// audit trail stays intact. Use restockItem or an adjustment for quantity.
+export const EditStockItemSchema = z.object({
+  stock_item_id: z.string().uuid(),
+  name: z.string().min(1, "Name is required").trim(),
+  unit: z.string().trim().min(1).default("pcs"),
+  cost_price: z.coerce.number().min(0, "Cost can't be negative").default(0),
+  sell_price: z.coerce.number().min(0, "Price can't be negative").default(0),
+  low_stock_threshold: z.coerce.number().min(0).default(5),
+});
+
 export const RestockSchema = z.object({
   stock_item_id: z.string().uuid("Invalid item"),
   quantity: z.coerce.number().positive("Quantity must be positive"),
   unit_cost: z.coerce.number().min(0).optional(),
+  pack_id: z.string().uuid().optional().nullable(),
 });
 
 // ─── Orders ──────────────────────────────────────────────────────────────────

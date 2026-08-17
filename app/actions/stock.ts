@@ -5,8 +5,14 @@ import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import { getSession } from "@/app/lib/session";
 import { z } from "zod";
-import { StockItemSchema, RestockSchema, type ActionState } from "@/app/lib/definitions";
-import { getLocaleFromCookie } from "@/app/lib/i18n-config";
+import {
+  StockItemSchema,
+  StockItemPacksSchema,
+  EditStockItemSchema,
+  RestockSchema,
+  type ActionState,
+} from "@/app/lib/definitions";
+import { getLocaleFromCookie } from "@/app/lib/get-locale";
 
 async function requireSession() {
   const session = await getSession();
@@ -19,7 +25,7 @@ export async function getStockItems() {
 
   const { data } = await supabase
     .from("stock_items")
-    .select("id, name, unit, cost_price, sell_price, quantity, low_stock_threshold")
+    .select("id, name, unit, cost_price, sell_price, quantity, low_stock_threshold, stock_item_packs(id, name, size)")
     .eq("merchant_id", session.merchantId)
     .eq("is_archived", false)
     .order("name");
@@ -32,7 +38,7 @@ export async function getStockItem(id: string) {
 
   const { data } = await supabase
     .from("stock_items")
-    .select("id, name, unit, cost_price, sell_price, quantity, low_stock_threshold")
+    .select("id, name, unit, cost_price, sell_price, quantity, low_stock_threshold, stock_item_packs(id, name, size)")
     .eq("id", id)
     .eq("merchant_id", session.merchantId)
     .single();
@@ -67,16 +73,127 @@ export async function addStockItem(
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  const { error } = await supabase.from("stock_items").insert({
-    merchant_id: session.merchantId,
-    ...validated.data,
+  let parsedPacks: unknown = [];
+  try {
+    parsedPacks = JSON.parse(String(formData.get("packs") ?? "[]"));
+  } catch {
+    return { message: "Invalid pack data." };
+  }
+
+  const validatedPacks = StockItemPacksSchema.safeParse(parsedPacks);
+  if (!validatedPacks.success) {
+    return { message: validatedPacks.error.issues[0]?.message ?? "Invalid packs." };
+  }
+
+  const { data: item, error } = await supabase
+    .from("stock_items")
+    .insert({ merchant_id: session.merchantId, ...validated.data })
+    .select("id")
+    .single();
+
+  if (error || !item) {
+    if (error?.code === "23505") {
+      return { errors: { name: ["You already have an item with this name."] } };
+    }
+    return { message: "Failed to add item." };
+  }
+
+  if (validatedPacks.data.length > 0) {
+    const { error: packError } = await supabase.from("stock_item_packs").insert(
+      validatedPacks.data.map((p) => ({
+        stock_item_id: item.id,
+        name: p.name,
+        size: p.size,
+      }))
+    );
+    if (packError) {
+      return { message: "Item saved, but failed to save packs. Edit the item to add them." };
+    }
+  }
+
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/stock`);
+  redirect(`/${lang}/stock`);
+}
+
+export async function updateStockItem(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await requireSession();
+
+  const validated = EditStockItemSchema.safeParse({
+    stock_item_id: formData.get("stock_item_id"),
+    name: formData.get("name"),
+    unit: formData.get("unit") || "pcs",
+    cost_price: formData.get("cost_price") || 0,
+    sell_price: formData.get("sell_price") || 0,
+    low_stock_threshold: formData.get("low_stock_threshold") || 5,
   });
+
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  let parsedPacks: unknown = [];
+  try {
+    parsedPacks = JSON.parse(String(formData.get("packs") ?? "[]"));
+  } catch {
+    return { message: "Invalid pack data." };
+  }
+
+  const validatedPacks = StockItemPacksSchema.safeParse(parsedPacks);
+  if (!validatedPacks.success) {
+    return { message: validatedPacks.error.issues[0]?.message ?? "Invalid packs." };
+  }
+
+  const { stock_item_id, ...fields } = validated.data;
+
+  // Confirm ownership before mutating anything
+  const { data: existing } = await supabase
+    .from("stock_items")
+    .select("id")
+    .eq("id", stock_item_id)
+    .eq("merchant_id", session.merchantId)
+    .single();
+
+  if (!existing) return { message: "Item not found." };
+
+  const { error } = await supabase
+    .from("stock_items")
+    .update(fields)
+    .eq("id", stock_item_id)
+    .eq("merchant_id", session.merchantId);
 
   if (error) {
     if (error.code === "23505") {
       return { errors: { name: ["You already have an item with this name."] } };
     }
-    return { message: "Failed to add item." };
+    return { message: "Failed to update item." };
+  }
+
+  // Packs are small in number and edited as a whole set — replace rather
+  // than diff, simplest way to keep add/rename/remove all consistent.
+  const { error: deleteError } = await supabase
+    .from("stock_item_packs")
+    .delete()
+    .eq("stock_item_id", stock_item_id);
+
+  if (deleteError) {
+    return { message: "Item updated, but failed to update packs." };
+  }
+
+  if (validatedPacks.data.length > 0) {
+    const { error: packError } = await supabase.from("stock_item_packs").insert(
+      validatedPacks.data.map((p) => ({
+        stock_item_id,
+        name: p.name,
+        size: p.size,
+      }))
+    );
+    if (packError) {
+      return { message: "Item updated, but failed to save packs." };
+    }
   }
 
   const lang = await getLocaleFromCookie();
@@ -94,28 +211,52 @@ export async function restockItem(
     stock_item_id: formData.get("stock_item_id"),
     quantity: formData.get("quantity"),
     unit_cost: formData.get("unit_cost") || undefined,
+    pack_id: formData.get("pack_id") || undefined,
   });
 
   if (!validated.success) {
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  const { stock_item_id, quantity, unit_cost } = validated.data;
+  const { stock_item_id, quantity, unit_cost, pack_id } = validated.data;
+
+  // Stock is always stored in base units. If the merchant entered the
+  // quantity/cost in a pack (e.g. "3 crates"), convert both to base units
+  // (bottles) before they ever touch stock_movements or stock_items.
+  let baseQuantity = quantity;
+  let baseUnitCost = unit_cost;
+
+  if (pack_id) {
+    const { data: pack } = await supabase
+      .from("stock_item_packs")
+      .select("size, stock_item_id")
+      .eq("id", pack_id)
+      .single();
+
+    if (!pack || pack.stock_item_id !== stock_item_id) {
+      return { message: "Invalid pack selected." };
+    }
+
+    baseQuantity = quantity * pack.size;
+    if (unit_cost !== undefined) {
+      baseUnitCost = unit_cost / pack.size;
+    }
+  }
 
   const { error } = await supabase.from("stock_movements").insert({
     merchant_id: session.merchantId,
     stock_item_id,
     movement_type: "restock",
-    quantity_change: quantity,
-    unit_cost: unit_cost ?? null,
+    quantity_change: baseQuantity,
+    unit_cost: baseUnitCost ?? null,
   });
 
   if (error) return { message: "Failed to record restock." };
 
-  if (unit_cost) {
+  if (baseUnitCost) {
     await supabase
       .from("stock_items")
-      .update({ cost_price: unit_cost })
+      .update({ cost_price: baseUnitCost })
       .eq("id", stock_item_id)
       .eq("merchant_id", session.merchantId);
   }

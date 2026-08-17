@@ -1,20 +1,43 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import { restockItem } from "@/app/actions/stock";
 import type { Dictionary } from "@/app/lib/i18n";
 
+type Pack = { id: string; name: string; size: number };
+
 type Props = {
-  item: { id: string; name: string; unit: string; quantity: number; cost_price: number };
+  item: {
+    id: string;
+    name: string;
+    unit: string;
+    quantity: number;
+    cost_price: number;
+    stock_item_packs: Pack[];
+  };
   t: Dictionary["stock"];
 };
 
 export default function RestockForm({ item, t }: Props) {
   const [state, action, pending] = useActionState(restockItem, undefined);
 
+  const hasPacks = item.stock_item_packs.length > 0;
+  const [packId, setPackId] = useState<string>(""); // "" = base unit
+  const [quantity, setQuantity] = useState("");
+
+  const selectedPack = item.stock_item_packs.find((p) => p.id === packId) ?? null;
+  const selectedUnitLabel = selectedPack ? selectedPack.name : item.unit;
+
+  const baseEquivalent = useMemo(() => {
+    const qty = Number(quantity) || 0;
+    return selectedPack ? qty * selectedPack.size : qty;
+  }, [quantity, selectedPack]);
+
   return (
     <form action={action} className="flex-grow flex flex-col">
       <input type="hidden" name="stock_item_id" value={item.id} />
+      <input type="hidden" name="pack_id" value={packId} />
 
       <main className="flex-grow px-6 pt-4 pb-4 space-y-4">
         <div className="bg-white rounded-3xl p-6 shadow-sm border border-zinc-200/80 space-y-6">
@@ -25,6 +48,37 @@ export default function RestockForm({ item, t }: Props) {
             </p>
           </div>
 
+          {hasPacks && (
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">
+                {t.enterQuantityAs}
+              </label>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                <button
+                  type="button"
+                  onClick={() => setPackId("")}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+                    packId === "" ? "bg-[#18181b] text-[#a3e635]" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                  }`}
+                >
+                  {item.unit}
+                </button>
+                {item.stock_item_packs.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setPackId(p.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
+                      packId === p.id ? "bg-[#18181b] text-[#a3e635]" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
+                    }`}
+                  >
+                    {p.name} ({p.size} {item.unit})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2" htmlFor="quantity">
               {t.quantityReceived}
@@ -33,19 +87,27 @@ export default function RestockForm({ item, t }: Props) {
               id="quantity"
               name="quantity"
               type="number"
-              inputMode="numeric"
-              min="1"
+              inputMode="decimal"
+              min="0"
+              step="any"
               autoFocus
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
               className="w-full text-center text-5xl font-black tracking-tighter bg-transparent border-none focus:ring-0 text-[#18181b] p-0"
               placeholder="0"
             />
             {state?.errors?.quantity && <p className="text-rose-600 text-xs mt-2 text-center">{state.errors.quantity[0]}</p>}
             <div className="h-1 w-full bg-[#a3e635] mx-auto mt-3 rounded-full" />
+            {selectedPack && Number(quantity) > 0 && (
+              <p className="text-zinc-400 text-xs text-center mt-3">
+                = {baseEquivalent.toLocaleString()} {item.unit}
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2" htmlFor="unit_cost">
-              {t.unitCostOptional}
+              {t.costPerUnit.replace("{unit}", selectedUnitLabel)}
             </label>
             <input
               id="unit_cost"
@@ -53,7 +115,8 @@ export default function RestockForm({ item, t }: Props) {
               type="number"
               inputMode="numeric"
               min="0"
-              defaultValue={item.cost_price || ""}
+              defaultValue={selectedPack ? "" : item.cost_price || ""}
+              key={packId}
               className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] font-medium"
             />
           </div>

@@ -198,7 +198,18 @@
     "livePosRevenue": "Live POS Revenue",
     "totalStockAssetValue": "Total Stock Asset Value",
     "itemsNeedRestocking": "items need restocking",
-    "itemNeedsRestocking": "item needs restocking"
+    "itemNeedsRestocking": "item needs restocking",
+    "editItem": "Edit Item",
+    "saveChanges": "Save Changes",
+    "editQuantityHint": "restock to change quantity",
+    "packsLabel": "Packs (optional)",
+    "packsHint": "For items sold in bundles, e.g. a Crate = 24 bottles",
+    "addPack": "Add pack",
+    "noPacks": "No packs yet — this item sells by the unit only.",
+    "packNamePlaceholder": "Pack name, e.g. Crate",
+    "packSizePlaceholder": "Size",
+    "enterQuantityAs": "Enter quantity as",
+    "costPerUnit": "Cost per {unit}"
   },
   "order": {
     "title": "New POS Order",

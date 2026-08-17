@@ -11,6 +11,7 @@ type StockItem = {
   sell_price: number;
   quantity: number;
   low_stock_threshold: number;
+  stock_item_packs?: { id: string; name: string; size: number }[];
 };
 
 type Filter = "all" | "low" | "out";
@@ -96,12 +97,27 @@ export default function StockList({
               ? "text-amber-700 bg-amber-50 border-amber-100"
               : "text-emerald-700 bg-emerald-50 border-emerald-100";
 
+            // Show a quick pack breakdown using the largest pack, e.g. "5 Crate + 4 bottles"
+            const packs = item.stock_item_packs ?? [];
+            const biggestPack = packs.length > 0 ? [...packs].sort((a, b) => b.size - a.size)[0] : null;
+            const packBreakdown =
+              biggestPack && item.quantity > 0
+                ? (() => {
+                    const packCount = Math.floor(item.quantity / biggestPack.size);
+                    const remainder = item.quantity % biggestPack.size;
+                    if (packCount <= 0) return null;
+                    return remainder > 0
+                      ? `${packCount} ${biggestPack.name} + ${remainder} ${item.unit}`
+                      : `${packCount} ${biggestPack.name}`;
+                  })()
+                : null;
+
             return (
               <div
                 key={item.id}
                 className="bg-white p-4 rounded-3xl flex items-center justify-between border border-zinc-200/80 shadow-sm"
               >
-                <div className="flex items-center gap-4 min-w-0">
+                <Link href={`/${lang}/stock/${item.id}/edit`} className="flex items-center gap-4 min-w-0">
                   <div className="h-12 w-12 rounded-2xl flex items-center justify-center font-black text-lg bg-zinc-100 text-zinc-500 shrink-0">
                     {item.name[0].toUpperCase()}
                   </div>
@@ -110,8 +126,9 @@ export default function StockList({
                     <p className="text-zinc-500 text-xs font-medium">
                       {item.quantity.toLocaleString()} {item.unit} · {item.sell_price.toLocaleString()} FCFA
                     </p>
+                    {packBreakdown && <p className="text-zinc-400 text-[11px] mt-0.5">{packBreakdown}</p>}
                   </div>
-                </div>
+                </Link>
                 <div className="flex items-center gap-2 shrink-0">
                   <span className={`text-[10px] uppercase tracking-tight font-bold px-2 py-1 rounded-lg border ${statusColor}`}>
                     {statusLabel}
