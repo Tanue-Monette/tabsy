@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
@@ -13,7 +14,7 @@ async function requireSession() {
   return session;
 }
 
-export async function getCustomers() {
+export const getCustomers = cache(async () => {
   const session = await requireSession();
 
   const { data } = await supabase
@@ -23,9 +24,9 @@ export async function getCustomers() {
     .order("name");
 
   return data ?? [];
-}
+});
 
-export async function getCustomer(customerId: string) {
+export const getCustomer = cache(async (customerId: string) => {
   const session = await requireSession();
 
   const { data } = await supabase
@@ -36,9 +37,9 @@ export async function getCustomer(customerId: string) {
     .single();
 
   return data ?? null;
-}
+});
 
-export async function getCustomerTransactions(customerId: string) {
+export const getCustomerTransactions = cache(async (customerId: string) => {
   const session = await requireSession();
 
   const { data } = await supabase
@@ -49,7 +50,7 @@ export async function getCustomerTransactions(customerId: string) {
     .order("created_at", { ascending: false });
 
   return data ?? [];
-}
+});
 
 // Unified action: creates customer if new, then records debt
 const AddDebtSchema = z.object({

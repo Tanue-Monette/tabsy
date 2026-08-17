@@ -48,19 +48,32 @@ export interface CachedMerchantSettings {
   weekly_reports?: boolean;
 }
 
+export interface CachedStockItem {
+  id: string;
+  name: string;
+  unit: string;
+  sell_price: number;
+  quantity: number;
+  low_stock_threshold: number;
+  stock_item_packs?: { id: string; name: string; size: number }[];
+  updatedAt?: number;
+}
+
 export class TabsyOfflineDB extends Dexie {
   offlineSyncQueue!: EntityTable<OfflineSyncItem, "id">;
   cachedCustomers!: EntityTable<CachedCustomer, "id">;
   cachedTransactions!: EntityTable<CachedTransaction, "id">;
   merchantSettings!: EntityTable<CachedMerchantSettings, "id">;
+  cachedStockItems!: EntityTable<CachedStockItem, "id">;
 
   constructor() {
     super("TabsyOfflineDB");
-    this.version(2).stores({
+    this.version(3).stores({
       offlineSyncQueue: "++id, type, status, createdAt",
       cachedCustomers: "id, name, balance, isPending, updatedAt",
       cachedTransactions: "id, customer_id, type, created_at, isPending",
       merchantSettings: "id",
+      cachedStockItems: "id, name, quantity",
     });
   }
 }

@@ -1,19 +1,33 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ItemSoldRecord } from "@/app/actions/orders";
+import type { ItemSoldRecord, PaymentStatsReport } from "@/app/actions/orders";
 import type { Dictionary } from "@/app/lib/i18n";
+import PaginationControls from "@/app/components/PaginationControls";
 
 type Props = {
   items: ItemSoldRecord[];
+  paymentStats?: PaymentStatsReport;
   merchantName?: string;
   shopName?: string;
   t?: Dictionary["inventoryReport"];
 };
 
-export default function InventorySalesReportClient({ items, merchantName, shopName, t }: Props) {
+export default function InventorySalesReportClient({ items, paymentStats, merchantName, shopName, t }: Props) {
   const [period, setPeriod] = useState<"day" | "week" | "month">("day");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const handlePeriodChange = (p: "day" | "week" | "month") => {
+    setPeriod(p);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (s: string) => {
+    setSearch(s);
+    setCurrentPage(1);
+  };
 
   const filteredItems = useMemo(() => {
     return items
@@ -50,6 +64,37 @@ export default function InventorySalesReportClient({ items, merchantName, shopNa
     () => filteredItems.reduce((sum, i) => sum + i.revenue, 0),
     [filteredItems]
   );
+
+  const currentCash =
+    period === "day"
+      ? paymentStats?.cashToday ?? 0
+      : period === "week"
+      ? paymentStats?.cashWeek ?? 0
+      : paymentStats?.cashMonth ?? 0;
+
+  const currentMtn =
+    period === "day"
+      ? paymentStats?.mtnToday ?? 0
+      : period === "week"
+      ? paymentStats?.mtnWeek ?? 0
+      : paymentStats?.mtnMonth ?? 0;
+
+  const currentOrange =
+    period === "day"
+      ? paymentStats?.orangeToday ?? 0
+      : period === "week"
+      ? paymentStats?.orangeWeek ?? 0
+      : paymentStats?.orangeMonth ?? 0;
+
+  const currentPeriodTotal =
+    period === "day"
+      ? paymentStats?.salesToday ?? totalRevenue
+      : period === "week"
+      ? paymentStats?.salesWeek ?? totalRevenue
+      : paymentStats?.salesMonth ?? totalRevenue;
+
+  const totalPages = Math.ceil(filteredItems.length / pageSize);
+  const paginatedItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const periodLabel =
     period === "day"
@@ -100,7 +145,7 @@ export default function InventorySalesReportClient({ items, merchantName, shopNa
         <div className="bg-zinc-200/80 p-1.5 rounded-3xl flex gap-1 border border-zinc-300/50">
           <button
             type="button"
-            onClick={() => setPeriod("day")}
+            onClick={() => handlePeriodChange("day")}
             className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               period === "day"
                 ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
@@ -113,7 +158,7 @@ export default function InventorySalesReportClient({ items, merchantName, shopNa
 
           <button
             type="button"
-            onClick={() => setPeriod("week")}
+            onClick={() => handlePeriodChange("week")}
             className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               period === "week"
                 ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
@@ -126,7 +171,7 @@ export default function InventorySalesReportClient({ items, merchantName, shopNa
 
           <button
             type="button"
-            onClick={() => setPeriod("month")}
+            onClick={() => handlePeriodChange("month")}
             className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               period === "month"
                 ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
@@ -147,7 +192,7 @@ export default function InventorySalesReportClient({ items, merchantName, shopNa
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder={t?.searchPlaceholder ?? "Search sold items..."}
               className="w-full h-11 pl-10 pr-4 bg-white border border-zinc-200 rounded-2xl text-xs font-medium focus:ring-2 focus:ring-[#18181b] transition-all"
             />
@@ -210,6 +255,80 @@ export default function InventorySalesReportClient({ items, merchantName, shopNa
         </div>
       </div>
 
+      {/* Payment Method Breakdown Cards */}
+      <div className="bg-white rounded-3xl p-5 shadow-sm border border-zinc-200/80 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-zinc-700 text-lg">account_balance_wallet</span>
+            <h3 className="text-xs font-extrabold text-[#18181b] uppercase tracking-wider">
+              {t?.paymentBreakdownTitle ?? "Payment Method Breakdown"} ({periodLabel})
+            </h3>
+          </div>
+          <span className="text-[10px] font-black text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-full">
+            {currentPeriodTotal.toLocaleString()} FCFA
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          {/* Cash */}
+          <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-200/60 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <span className="material-symbols-outlined text-base">payments</span>
+              </div>
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                {currentPeriodTotal > 0 ? Math.round((currentCash / currentPeriodTotal) * 100) : 0}%
+              </span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-zinc-500">{t?.cash ?? "Cash"}</p>
+              <p className="text-lg font-black text-[#18181b] mt-0.5 leading-tight">
+                {currentCash.toLocaleString()}
+              </p>
+              <span className="text-[10px] font-semibold text-zinc-400">FCFA</span>
+            </div>
+          </div>
+
+          {/* MTN Mobile Money */}
+          <div className="bg-amber-50/60 rounded-2xl p-4 border border-amber-200/60 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black text-xs shadow-sm">
+                MTN
+              </div>
+              <span className="text-[10px] font-black text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
+                {currentPeriodTotal > 0 ? Math.round((currentMtn / currentPeriodTotal) * 100) : 0}%
+              </span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-amber-900">{t?.mtn ?? "MTN MoMo"}</p>
+              <p className="text-lg font-black text-[#18181b] mt-0.5 leading-tight">
+                {currentMtn.toLocaleString()}
+              </p>
+              <span className="text-[10px] font-semibold text-amber-700">FCFA</span>
+            </div>
+          </div>
+
+          {/* Orange Money */}
+          <div className="bg-orange-50/60 rounded-2xl p-4 border border-orange-200/60 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#FF6600] text-white flex items-center justify-center font-black text-xs shadow-sm">
+                OM
+              </div>
+              <span className="text-[10px] font-black text-orange-800 bg-orange-100 px-2 py-0.5 rounded-full border border-orange-200">
+                {currentPeriodTotal > 0 ? Math.round((currentOrange / currentPeriodTotal) * 100) : 0}%
+              </span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-orange-900">{t?.orange ?? "Orange Money"}</p>
+              <p className="text-lg font-black text-[#18181b] mt-0.5 leading-tight">
+                {currentOrange.toLocaleString()}
+              </p>
+              <span className="text-[10px] font-semibold text-orange-700">FCFA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Items Sold Table */}
       <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-zinc-200/80 print-container">
         <div className="p-5 border-b border-zinc-100 flex items-center justify-between">
@@ -240,7 +359,7 @@ export default function InventorySalesReportClient({ items, merchantName, shopNa
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {filteredItems.map((item) => (
+                {paginatedItems.map((item) => (
                   <tr key={item.stock_item_id} className="hover:bg-zinc-50/80 transition-colors">
                     <td className="py-4 px-5 font-bold text-[#18181b]">{item.name}</td>
                     <td className="py-4 px-5 text-center text-zinc-500 font-medium">{item.unit}</td>
@@ -263,6 +382,20 @@ export default function InventorySalesReportClient({ items, merchantName, shopNa
                 </tr>
               </tfoot>
             </table>
+
+            <div className="p-4 border-t border-zinc-100 no-print">
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredItems.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(sz) => {
+                  setPageSize(sz);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
           </div>
         )}
       </div>

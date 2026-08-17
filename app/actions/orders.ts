@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
@@ -201,7 +202,7 @@ export type ItemSoldRecord = {
   revenueMonth: number;
 };
 
-export async function getItemsSoldReport(): Promise<ItemSoldRecord[]> {
+export const getItemsSoldReport = cache(async (): Promise<ItemSoldRecord[]> => {
   const session = await requireSession();
 
   const now = new Date();
@@ -272,4 +273,67 @@ export async function getItemsSoldReport(): Promise<ItemSoldRecord[]> {
   }
 
   return Array.from(itemMap.values());
-}
+});
+
+export type PaymentStatsReport = {
+  salesToday: number;
+  cashToday: number;
+  mtnToday: number;
+  orangeToday: number;
+  salesWeek: number;
+  cashWeek: number;
+  mtnWeek: number;
+  orangeWeek: number;
+  salesMonth: number;
+  cashMonth: number;
+  mtnMonth: number;
+  orangeMonth: number;
+};
+
+export const getPaymentStatsReport = cache(async (): Promise<PaymentStatsReport> => {
+  const session = await requireSession();
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const startOfWeek = new Date(d.setDate(diff));
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const { data: salesTx } = await supabase
+    .from("transactions")
+    .select("amount, created_at, type, method")
+    .eq("merchant_id", session.merchantId)
+    .gte("created_at", startOfMonth);
+
+  const txList = salesTx ?? [];
+
+  const todayTxs = txList.filter(
+    (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfToday
+  );
+  const weekTxs = txList.filter(
+    (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfWeek.toISOString()
+  );
+  const monthTxs = txList.filter((t) => t.type === "sale" || t.type === "payment");
+
+  return {
+    salesToday: todayTxs.reduce((sum, t) => sum + t.amount, 0),
+    cashToday: todayTxs.filter((t) => !t.method || t.method === "cash").reduce((sum, t) => sum + t.amount, 0),
+    mtnToday: todayTxs.filter((t) => t.method === "mtn").reduce((sum, t) => sum + t.amount, 0),
+    orangeToday: todayTxs.filter((t) => t.method === "orange").reduce((sum, t) => sum + t.amount, 0),
+
+    salesWeek: weekTxs.reduce((sum, t) => sum + t.amount, 0),
+    cashWeek: weekTxs.filter((t) => !t.method || t.method === "cash").reduce((sum, t) => sum + t.amount, 0),
+    mtnWeek: weekTxs.filter((t) => t.method === "mtn").reduce((sum, t) => sum + t.amount, 0),
+    orangeWeek: weekTxs.filter((t) => t.method === "orange").reduce((sum, t) => sum + t.amount, 0),
+
+    salesMonth: monthTxs.reduce((sum, t) => sum + t.amount, 0),
+    cashMonth: monthTxs.filter((t) => !t.method || t.method === "cash").reduce((sum, t) => sum + t.amount, 0),
+    mtnMonth: monthTxs.filter((t) => t.method === "mtn").reduce((sum, t) => sum + t.amount, 0),
+    orangeMonth: monthTxs.filter((t) => t.method === "orange").reduce((sum, t) => sum + t.amount, 0),
+  };
+});

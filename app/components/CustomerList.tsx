@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { db } from "@/app/lib/db";
 import { cacheOnlineCustomers, subscribeSyncStatus } from "@/app/lib/syncEngine";
+import PaginationControls from "@/app/components/PaginationControls";
 
 type Customer = {
   id: string;
@@ -24,6 +25,8 @@ const FILTERS: { key: Filter; label: string }[] = [
 export default function CustomerList({ customers, lang }: { customers: Customer[]; lang: string }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [allCustomers, setAllCustomers] = useState<(Customer & { isPending?: boolean })[]>(customers);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -47,6 +50,16 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
     return () => unsubscribe();
   }, [customers]);
 
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (key: Filter) => {
+    setFilter(key);
+    setCurrentPage(1);
+  };
+
   const filtered = allCustomers
     .filter((c) => {
       const q = search.toLowerCase().trim();
@@ -62,11 +75,14 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
       return true;
     });
 
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   // Clear: reset both the DOM value and the state
   function handleClear(e: React.MouseEvent | React.TouchEvent) {
     e.preventDefault();
     if (inputRef.current) inputRef.current.value = "";
-    setSearch("");
+    handleSearchChange("");
   }
 
   return (
@@ -78,7 +94,7 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
         </div>
         <input
           ref={inputRef}
-          onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
+          onInput={(e) => handleSearchChange((e.target as HTMLInputElement).value)}
           defaultValue=""
           autoComplete="off"
           autoCorrect="off"
@@ -106,8 +122,8 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
           <button
             key={f.key}
             type="button"
-            onMouseDown={() => setFilter(f.key)}
-            onTouchEnd={(e) => { e.preventDefault(); setFilter(f.key); }}
+            onMouseDown={() => handleFilterChange(f.key)}
+            onTouchEnd={(e) => { e.preventDefault(); handleFilterChange(f.key); }}
             className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
               filter === f.key
                 ? "bg-[#18181b] text-[#a3e635]"
@@ -144,7 +160,7 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((c) => {
+          {paginated.map((c) => {
             const isCleared = c.balance <= 0;
             return (
               <Link
@@ -179,6 +195,18 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
               </Link>
             );
           })}
+
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(sz) => {
+              setPageSize(sz);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       )}
     </section>

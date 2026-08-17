@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { SessionPayload } from "./definitions";
@@ -40,13 +41,12 @@ export async function createSession(merchantId: string): Promise<void> {
     path: "/",
   });
 }
-
-export async function getSession(): Promise<SessionPayload | null> {
+export const getSession = cache(async (): Promise<SessionPayload | null> => {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
   return decrypt(token);
-}
+});
 
 export async function updateSession(): Promise<void> {
   const cookieStore = await cookies();

@@ -209,7 +209,11 @@
     "packNamePlaceholder": "Nom, ex. Caisse",
     "packSizePlaceholder": "Taille",
     "enterQuantityAs": "Saisir la quantité en",
-    "costPerUnit": "Coût par {unit}"
+    "costPerUnit": "Coût par {unit}",
+    "todaySalesBreakdown": "Répartition des recettes du jour",
+    "cashShort": "Espèces",
+    "mtnShort": "MTN MoMo",
+    "orangeShort": "Orange"
   },
   "order": {
     "title": "Nouvelle vente POS",
@@ -242,6 +246,10 @@
     "print": "Imprimer",
     "totalItemsSold": "Total articles vendus",
     "totalRevenue": "Chiffre d'affaires total",
+    "paymentBreakdownTitle": "Modes de Paiement Encaissés",
+    "cash": "Espèces",
+    "mtn": "MTN MoMo",
+    "orange": "Orange Money",
     "itemsSoldList": "Liste des articles vendus",
     "rankedByRevenue": "Classé par chiffre d'affaires",
     "itemName": "Nom de l'article",

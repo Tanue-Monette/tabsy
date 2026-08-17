@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { db } from "@/app/lib/db";
+import { cacheOnlineStockItems, subscribeSyncStatus } from "@/app/lib/syncEngine";
 import type { Dictionary } from "@/app/lib/i18n";
+import PaginationControls from "@/app/components/PaginationControls";
 
 type StockItem = {
   id: string;
@@ -27,6 +30,28 @@ export default function StockList({
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [allStockItems, setAllStockItems] = useState<StockItem[]>(items);
+
+  useEffect(() => {
+    cacheOnlineStockItems(items);
+
+    const loadLocalStock = async () => {
+      try {
+        const local = await db.cachedStockItems.toArray();
+        if (local.length > 0) {
+          setAllStockItems(local);
+        }
+      } catch (err) {
+        console.error("Dexie read error:", err);
+      }
+    };
+
+    loadLocalStock();
+    const unsubscribe = subscribeSyncStatus(loadLocalStock);
+    return () => unsubscribe();
+  }, [items]);
 
   const FILTERS: { key: Filter; label: string }[] = [
     { key: "all", label: t.allItems },
@@ -34,13 +59,26 @@ export default function StockList({
     { key: "out", label: t.outOfStock },
   ];
 
-  const filtered = items
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (key: Filter) => {
+    setFilter(key);
+    setCurrentPage(1);
+  };
+
+  const filtered = allStockItems
     .filter((i) => i.name.toLowerCase().includes(search.toLowerCase().trim()))
     .filter((i) => {
       if (filter === "low") return i.quantity > 0 && i.quantity <= i.low_stock_threshold;
       if (filter === "out") return i.quantity <= 0;
       return true;
     });
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <section className="space-y-4">
@@ -50,7 +88,7 @@ export default function StockList({
           <span className="material-symbols-outlined">search</span>
         </div>
         <input
-          onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
+          onInput={(e) => handleSearchChange((e.target as HTMLInputElement).value)}
           autoComplete="off"
           className="w-full h-14 bg-zinc-200/60 border-none rounded-2xl pl-12 pr-10 focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-500 font-medium"
           placeholder={t.searchPlaceholder}
@@ -64,7 +102,7 @@ export default function StockList({
           <button
             key={f.key}
             type="button"
-            onClick={() => setFilter(f.key)}
+            onClick={() => handleFilterChange(f.key)}
             className={`px-5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors ${
               filter === f.key ? "bg-[#18181b] text-[#a3e635]" : "bg-zinc-200/70 text-zinc-600 hover:bg-zinc-200"
             }`}
@@ -87,7 +125,7 @@ export default function StockList({
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((item) => {
+          {paginated.map((item) => {
             const isOut = item.quantity <= 0;
             const isLow = !isOut && item.quantity <= item.low_stock_threshold;
             const statusLabel = isOut ? t.out : isLow ? t.low : t.inStock;
@@ -143,6 +181,18 @@ export default function StockList({
               </div>
             );
           })}
+
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={(sz) => {
+              setPageSize(sz);
+              setCurrentPage(1);
+            }}
+          />
         </div>
       )}
     </section>

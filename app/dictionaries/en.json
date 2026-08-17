@@ -209,7 +209,11 @@
     "packNamePlaceholder": "Pack name, e.g. Crate",
     "packSizePlaceholder": "Size",
     "enterQuantityAs": "Enter quantity as",
-    "costPerUnit": "Cost per {unit}"
+    "costPerUnit": "Cost per {unit}",
+    "todaySalesBreakdown": "Today's Revenue Breakdown",
+    "cashShort": "Cash",
+    "mtnShort": "MTN MoMo",
+    "orangeShort": "Orange"
   },
   "order": {
     "title": "New POS Order",
@@ -242,6 +246,10 @@
     "print": "Print",
     "totalItemsSold": "Total Items Sold",
     "totalRevenue": "Total Revenue",
+    "paymentBreakdownTitle": "Payment Method Breakdown",
+    "cash": "Cash",
+    "mtn": "MTN MoMo",
+    "orange": "Orange Money",
     "itemsSoldList": "Items Sold List",
     "rankedByRevenue": "Ranked by revenue generated",
     "itemName": "Item Name",

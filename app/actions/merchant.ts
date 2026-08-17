@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { supabase } from "@/app/lib/supabase";
 import { getSession } from "@/app/lib/session";
@@ -11,7 +12,7 @@ async function requireSession() {
   return session;
 }
 
-export async function getMerchant() {
+export const getMerchant = cache(async () => {
   const session = await requireSession();
 
   const { data, error } = await supabase
@@ -22,7 +23,7 @@ export async function getMerchant() {
 
   if (error || !data) return null;
   return data;
-}
+});
 
 export async function updateSettings(formData: FormData) {
   const session = await requireSession();

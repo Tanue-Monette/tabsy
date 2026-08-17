@@ -1,4 +1,4 @@
-import { db, type OfflineSyncItem, type CachedCustomer, type CachedTransaction } from "./db";
+import { db, type OfflineSyncItem, type CachedCustomer, type CachedTransaction, type CachedStockItem } from "./db";
 import { processOfflineQueueItem } from "@/app/actions/offlineSync";
 
 let isSyncing = false;
@@ -14,6 +14,24 @@ export function subscribeSyncStatus(listener: () => void) {
 
 export function notifyListeners() {
   listeners.forEach((fn) => fn());
+}
+
+/**
+ * Cache server stock items into Dexie IndexedDB
+ */
+export async function cacheOnlineStockItems(items: Array<CachedStockItem>) {
+  if (typeof window === "undefined") return;
+  try {
+    await db.cachedStockItems.clear();
+    const serverItems: CachedStockItem[] = items.map((i) => ({
+      ...i,
+      updatedAt: Date.now(),
+    }));
+    await db.cachedStockItems.bulkPut(serverItems);
+    notifyListeners();
+  } catch (err) {
+    console.error("Failed to cache online stock items:", err);
+  }
 }
 
 /**

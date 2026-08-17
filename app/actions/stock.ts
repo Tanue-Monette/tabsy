@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
@@ -20,7 +21,7 @@ async function requireSession() {
   return session;
 }
 
-export async function getStockItems() {
+export const getStockItems = cache(async () => {
   const session = await requireSession();
 
   const { data } = await supabase
@@ -31,9 +32,9 @@ export async function getStockItems() {
     .order("name");
 
   return data ?? [];
-}
+});
 
-export async function getStockItem(id: string) {
+export const getStockItem = cache(async (id: string) => {
   const session = await requireSession();
 
   const { data } = await supabase
@@ -44,15 +45,15 @@ export async function getStockItem(id: string) {
     .single();
 
   return data ?? null;
-}
+});
 
 // Items at or below their low-stock threshold — the "replenish this" list
-export async function getReplenishmentList() {
+export const getReplenishmentList = cache(async () => {
   const items = await getStockItems();
   return items
     .filter((i) => i.quantity <= i.low_stock_threshold)
     .sort((a, b) => a.quantity - b.quantity);
-}
+});
 
 export async function addStockItem(
   _state: ActionState,
@@ -292,7 +293,7 @@ export async function archiveStockItem(
   redirect(`/${lang}/stock`);
 }
 
-export async function getStockSalesStats() {
+export const getStockSalesStats = cache(async () => {
   const session = await requireSession();
 
   const now = new Date();
@@ -310,23 +311,67 @@ export async function getStockSalesStats() {
 
   const { data: salesTx } = await supabase
     .from("transactions")
-    .select("amount, created_at, type")
+    .select("amount, created_at, type, method")
     .eq("merchant_id", session.merchantId)
     .gte("created_at", startOfMonth);
 
   const txList = salesTx ?? [];
 
-  const salesToday = txList
-    .filter((t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfToday)
+  const todayTxs = txList.filter(
+    (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfToday
+  );
+
+  const weekTxs = txList.filter(
+    (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfWeek.toISOString()
+  );
+
+  const monthTxs = txList.filter((t) => t.type === "sale" || t.type === "payment");
+
+  const salesToday = todayTxs.reduce((sum, t) => sum + t.amount, 0);
+  const cashToday = todayTxs
+    .filter((t) => !t.method || t.method === "cash")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const mtnToday = todayTxs
+    .filter((t) => t.method === "mtn")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const orangeToday = todayTxs
+    .filter((t) => t.method === "orange")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const salesWeek = txList
-    .filter((t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfWeek.toISOString())
+  const salesWeek = weekTxs.reduce((sum, t) => sum + t.amount, 0);
+  const cashWeek = weekTxs
+    .filter((t) => !t.method || t.method === "cash")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const mtnWeek = weekTxs
+    .filter((t) => t.method === "mtn")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const orangeWeek = weekTxs
+    .filter((t) => t.method === "orange")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const salesMonth = txList
-    .filter((t) => t.type === "sale" || t.type === "payment")
+  const salesMonth = monthTxs.reduce((sum, t) => sum + t.amount, 0);
+  const cashMonth = monthTxs
+    .filter((t) => !t.method || t.method === "cash")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const mtnMonth = monthTxs
+    .filter((t) => t.method === "mtn")
+    .reduce((sum, t) => sum + t.amount, 0);
+  const orangeMonth = monthTxs
+    .filter((t) => t.method === "orange")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  return { salesToday, salesWeek, salesMonth };
-}
+  return {
+    salesToday,
+    cashToday,
+    mtnToday,
+    orangeToday,
+    salesWeek,
+    cashWeek,
+    mtnWeek,
+    orangeWeek,
+    salesMonth,
+    cashMonth,
+    mtnMonth,
+    orangeMonth,
+  };
+});

@@ -96,6 +96,86 @@ export default async function StockPage({
               </div>
             </div>
           </div>
+
+          {/* Payment Method Breakdown Card for Today's Sales */}
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-zinc-200/80 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-zinc-700 text-lg">account_balance_wallet</span>
+                <h3 className="text-xs font-extrabold text-[#18181b] uppercase tracking-wider">
+                  {t.stock.todaySalesBreakdown ?? "Today's Revenue Breakdown"}
+                </h3>
+              </div>
+              <span className="text-[10px] font-black text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-full">
+                {salesStats.salesToday.toLocaleString()} FCFA
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5">
+              {/* Cash Card */}
+              <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-200/60 flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-sm">payments</span>
+                  </div>
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100">
+                    {salesStats.salesToday > 0
+                      ? Math.round((salesStats.cashToday / salesStats.salesToday) * 100)
+                      : 0}%
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-500">{t.stock.cashShort ?? "Cash"}</p>
+                  <p className="text-sm font-black text-[#18181b] mt-0.5 leading-tight">
+                    {salesStats.cashToday.toLocaleString()}
+                  </p>
+                  <span className="text-[9px] font-semibold text-zinc-400">FCFA</span>
+                </div>
+              </div>
+
+              {/* MTN MoMo Card */}
+              <div className="bg-amber-50/60 rounded-2xl p-3 border border-amber-200/60 flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-7 h-7 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black text-[10px] shadow-sm">
+                    MTN
+                  </div>
+                  <span className="text-[9px] font-black text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded-full border border-amber-200">
+                    {salesStats.salesToday > 0
+                      ? Math.round((salesStats.mtnToday / salesStats.salesToday) * 100)
+                      : 0}%
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-amber-900">{t.stock.mtnShort ?? "MTN MoMo"}</p>
+                  <p className="text-sm font-black text-[#18181b] mt-0.5 leading-tight">
+                    {salesStats.mtnToday.toLocaleString()}
+                  </p>
+                  <span className="text-[9px] font-semibold text-amber-700">FCFA</span>
+                </div>
+              </div>
+
+              {/* Orange Money Card */}
+              <div className="bg-orange-50/60 rounded-2xl p-3 border border-orange-200/60 flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-7 h-7 rounded-xl bg-[#FF6600] text-white flex items-center justify-center font-black text-[10px] shadow-sm">
+                    OM
+                  </div>
+                  <span className="text-[9px] font-black text-orange-800 bg-orange-100 px-1.5 py-0.5 rounded-full border border-orange-200">
+                    {salesStats.salesToday > 0
+                      ? Math.round((salesStats.orangeToday / salesStats.salesToday) * 100)
+                      : 0}%
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-orange-900">{t.stock.orangeShort ?? "Orange"}</p>
+                  <p className="text-sm font-black text-[#18181b] mt-0.5 leading-tight">
+                    {salesStats.orangeToday.toLocaleString()}
+                  </p>
+                  <span className="text-[9px] font-semibold text-orange-700">FCFA</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Total Stock Value */}

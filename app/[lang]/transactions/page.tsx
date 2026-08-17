@@ -4,7 +4,7 @@ import BottomNav from "@/app/components/BottomNav";
 import InventorySalesReportClient from "@/app/components/InventorySalesReportClient";
 import { getSession } from "@/app/lib/session";
 import { getMerchant } from "@/app/actions/merchant";
-import { getItemsSoldReport } from "@/app/actions/orders";
+import { getItemsSoldReport, getPaymentStatsReport } from "@/app/actions/orders";
 import { getDictionary, isValidLocale, type Locale } from "@/app/lib/i18n";
 
 export default async function TransactionsPage({
@@ -19,8 +19,9 @@ export default async function TransactionsPage({
   const session = await getSession();
   if (!session) redirect(`/${lang}`);
 
-  const [items, merchant] = await Promise.all([
+  const [items, paymentStats, merchant] = await Promise.all([
     getItemsSoldReport(),
+    getPaymentStatsReport(),
     getMerchant(),
   ]);
 
@@ -52,6 +53,7 @@ export default async function TransactionsPage({
       <main className="px-6 pt-6">
         <InventorySalesReportClient
           items={items}
+          paymentStats={paymentStats}
           merchantName={merchant?.merchant_name}
           shopName={merchant?.shop_name}
           t={t.inventoryReport}
