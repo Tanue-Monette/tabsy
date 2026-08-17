@@ -27,7 +27,7 @@ export default async function NewOrderPage({
     <div className="bg-[#f8f9fa] text-[#191c1d] min-h-screen flex flex-col">
       <header className="flex items-center w-full px-6 pt-10 pb-6 bg-[#18181b] text-white sticky top-0 z-40 shadow-lg border-b border-zinc-800/50">
         <Link
-          href={`/${lang}/customers`}
+          href={`/${lang}/stock`}
           className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-white transition-colors border border-zinc-700/40"
         >
           <span className="material-symbols-outlined text-lg">arrow_back</span>

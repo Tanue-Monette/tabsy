@@ -102,49 +102,52 @@ export async function recordPayment(
 }
 
 export async function getDashboardStats(merchantId: string) {
-  const [customersRes, todayRes, monthRes] = await Promise.all([
+  const startOfToday = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+
+  const [customersRes, todayTxRes, monthTxRes] = await Promise.all([
     supabase
       .from("customers")
-      .select("id, name, phone, balance")
-      .eq("merchant_id", merchantId)
-      .order("balance", { ascending: false })
-      .limit(3),
-
-    supabase
-      .from("transactions")
-      .select("amount")
-      .eq("merchant_id", merchantId)
-      .eq("type", "payment")
-      .gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
+      .select("balance")
+      .eq("merchant_id", merchantId),
 
     supabase
       .from("transactions")
       .select("amount, type")
       .eq("merchant_id", merchantId)
-      .gte(
-        "created_at",
-        new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-      ),
+      .gte("created_at", startOfToday),
+
+    supabase
+      .from("transactions")
+      .select("amount, type")
+      .eq("merchant_id", merchantId)
+      .gte("created_at", startOfMonth),
   ]);
 
-  const topDebtors = customersRes.data ?? [];
-  const todayPayments = todayRes.data ?? [];
-  const monthTx = monthRes.data ?? [];
+  const allCustomers = customersRes.data ?? [];
+  const todayTx = todayTxRes.data ?? [];
+  const monthTx = monthTxRes.data ?? [];
 
-  const totalOwed = topDebtors.reduce(
+  const totalOwed = allCustomers.reduce(
     (sum, c) => sum + (c.balance > 0 ? c.balance : 0),
     0
   );
 
-  const paymentsToday = todayPayments.reduce((sum, t) => sum + t.amount, 0);
-
-  const monthlyCollected = monthTx
-    .filter((t) => t.type === "payment")
+  const salesToday = todayTx
+    .filter((t) => t.type === "sale")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const monthlyDebts = monthTx
+  const debtsToday = todayTx
     .filter((t) => t.type === "debt")
     .reduce((sum, t) => sum + t.amount, 0);
 
-  return { topDebtors, totalOwed, paymentsToday, monthlyCollected, monthlyDebts };
+  const salesMonth = monthTx
+    .filter((t) => t.type === "sale")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const debtsMonth = monthTx
+    .filter((t) => t.type === "debt")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  return { totalOwed, salesToday, debtsToday, salesMonth, debtsMonth };
 }

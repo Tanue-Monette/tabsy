@@ -1,6 +1,10 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import BottomNav from "@/app/components/BottomNav";
+import InventorySalesReportClient from "@/app/components/InventorySalesReportClient";
 import { getSession } from "@/app/lib/session";
+import { getMerchant } from "@/app/actions/merchant";
+import { getItemsSoldReport } from "@/app/actions/orders";
 import { getDictionary, isValidLocale, type Locale } from "@/app/lib/i18n";
 
 export default async function TransactionsPage({
@@ -15,14 +19,45 @@ export default async function TransactionsPage({
   const session = await getSession();
   if (!session) redirect(`/${lang}`);
 
+  const [items, merchant] = await Promise.all([
+    getItemsSoldReport(),
+    getMerchant(),
+  ]);
+
   return (
     <div className="bg-[#f8f9fa] min-h-screen pb-32">
-      <header className="bg-[#18181b] text-white flex items-center w-full px-6 pt-10 pb-6 sticky top-0 z-40 shadow-lg border-b border-zinc-800/50">
-        <h1 className="text-xl font-bold tracking-tight">{t.nav.transactions}</h1>
+      <header className="bg-[#18181b] text-white sticky top-0 z-40 shadow-lg border-b border-zinc-800/50">
+        <div className="flex justify-between items-center w-full px-6 pt-10 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#27272a] border border-zinc-700/50 flex items-center justify-center shadow-inner">
+              <span className="material-symbols-outlined text-[#a3e635]">query_stats</span>
+            </div>
+            <div>
+              <span className="block text-[#a3e635] font-semibold tracking-wider uppercase text-[10px]">
+                {merchant?.shop_name ?? "Tabsy"} POS
+              </span>
+              <h1 className="text-xl font-bold text-white leading-tight">{t.inventoryReport.title}</h1>
+            </div>
+          </div>
+          <Link
+            href={`/${lang}/new-order`}
+            className="flex items-center gap-1.5 bg-[#a3e635] text-[#121212] font-black text-xs px-3.5 py-2 rounded-xl active:scale-95 transition-all shadow-md shadow-[#a3e635]/20 cursor-pointer hover:bg-[#b4f346]"
+          >
+            <span className="material-symbols-outlined text-sm font-bold">point_of_sale</span>
+            {t.order.newOrder}
+          </Link>
+        </div>
       </header>
-      <main className="px-6 pt-8">
-        <p className="text-[#424843]">Transaction ledger coming soon.</p>
+
+      <main className="px-6 pt-6">
+        <InventorySalesReportClient
+          items={items}
+          merchantName={merchant?.merchant_name}
+          shopName={merchant?.shop_name}
+          t={t.inventoryReport}
+        />
       </main>
+
       <BottomNav lang={lang} t={t.nav} />
     </div>
   );

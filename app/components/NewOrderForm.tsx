@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createOrderAsDebt } from "@/app/actions/orders";
+import { createOrder } from "@/app/actions/orders";
 import { queueOfflineTransaction } from "@/app/lib/syncEngine";
 import type { Dictionary } from "@/app/lib/i18n";
 
@@ -20,8 +20,10 @@ type Props = {
 
 export default function NewOrderForm({ customers, stockItems, t, lang, preselectedCustomerId }: Props) {
   const router = useRouter();
-  const [state, action, pending] = useActionState(createOrderAsDebt, undefined);
+  const [state, action, pending] = useActionState(createOrder, undefined);
 
+  const [saleType, setSaleType] = useState<"sale" | "debt">("sale");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "mtn" | "orange">("cash");
   const [customerId, setCustomerId] = useState(preselectedCustomerId ?? "");
   const [customerSearch, setCustomerSearch] = useState("");
   const [itemSearch, setItemSearch] = useState("");
@@ -67,7 +69,7 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
     lines.map((l) => ({ stock_item_id: l.stock_item_id, quantity: l.quantity, unit_price: l.unit_price }))
   );
 
-  const isValid = customerId.length > 0 && lines.length > 0;
+  const isValid = lines.length > 0 && (saleType === "sale" || customerId.length > 0);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     if (!navigator.onLine) {
@@ -75,7 +77,7 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
       if (!isValid) return;
 
       await queueOfflineTransaction("order", {
-        customer_id: customerId,
+        customer_id: customerId || undefined,
         amount: total,
         items: lines.map((l) => ({
           stock_item_id: l.stock_item_id,
@@ -87,7 +89,7 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
 
       setOfflineMessage("Saved offline! Order queued to sync when internet returns.");
       setTimeout(() => {
-        router.push(`/${lang}/customers/${customerId}`);
+        router.push(`/${lang}/transactions`);
       }, 1500);
     }
   };
@@ -95,66 +97,131 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
   return (
     <form action={action} onSubmit={handleSubmit} className="flex-grow flex flex-col">
       <input type="hidden" name="customer_id" value={customerId} />
+      <input type="hidden" name="sale_type" value={saleType} />
+      <input type="hidden" name="payment_method" value={paymentMethod} />
       <input type="hidden" name="items" value={itemsJson} />
 
       <main className="flex-grow px-6 pt-4 pb-4 space-y-4">
-        {/* Customer picker */}
-        <div className="bg-white rounded-3xl p-5 shadow-sm border border-zinc-200/80 space-y-3">
-          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider">
-            {t.selectCustomer}
-          </label>
+        {/* Settlement Type Toggle */}
+        <div className="bg-zinc-200/80 p-1.5 rounded-3xl flex gap-1 border border-zinc-300/50">
+          <button
+            type="button"
+            onClick={() => setSaleType("sale")}
+            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+              saleType === "sale"
+                ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
+                : "text-zinc-600 hover:text-zinc-900"
+            }`}
+          >
+            <span className="material-symbols-outlined text-base">point_of_sale</span>
+            Direct Sale (Paid)
+          </button>
 
-          {selectedCustomer ? (
-            <div className="flex items-center justify-between bg-zinc-100 rounded-2xl p-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-[#18181b] text-[#a3e635] flex items-center justify-center font-black">
-                  {selectedCustomer.name[0].toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-bold text-[#18181b] text-sm">{selectedCustomer.name}</p>
-                  <p className="text-zinc-500 text-xs">{selectedCustomer.phone ?? "No phone"}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCustomerId("")}
-                className="text-zinc-400 hover:text-zinc-600"
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-          ) : (
-            <>
-              <input
-                value={customerSearch}
-                onChange={(e) => setCustomerSearch(e.target.value)}
-                placeholder={t.searchCustomerPlaceholder}
-                className="w-full h-12 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
-              />
-              <div className="max-h-48 overflow-y-auto space-y-1">
-                {filteredCustomers.slice(0, 8).map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => {
-                      setCustomerId(c.id);
-                      setCustomerSearch("");
-                    }}
-                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-100 text-left"
-                  >
-                    <div className="h-9 w-9 rounded-lg bg-zinc-200 text-zinc-600 flex items-center justify-center font-bold text-sm">
-                      {c.name[0].toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-[#18181b] text-sm truncate">{c.name}</p>
-                      <p className="text-zinc-400 text-xs">{c.phone ?? "No phone"}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={() => setSaleType("debt")}
+            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+              saleType === "debt"
+                ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
+                : "text-zinc-600 hover:text-zinc-900"
+            }`}
+          >
+            <span className="material-symbols-outlined text-base">receipt_long</span>
+            Credit / Debt Tab
+          </button>
         </div>
+
+        {/* Payment Method Selector for Direct Sales */}
+        {saleType === "sale" && (
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-zinc-200/80 space-y-3">
+            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider">
+              Payment Method
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { key: "cash", label: "Cash", icon: "payments" },
+                { key: "mtn", label: "MTN MoMo", icon: "smartphone" },
+                { key: "orange", label: "Orange", icon: "account_balance_wallet" },
+              ].map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => setPaymentMethod(m.key as any)}
+                  className={`py-3 px-2 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${
+                    paymentMethod === m.key
+                      ? "border-[#18181b] bg-zinc-100 text-[#18181b] font-black"
+                      : "border-zinc-100 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 font-bold"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-lg">{m.icon}</span>
+                  <span className="text-[11px]">{m.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Customer picker (Required for Debt Sales ONLY) */}
+        {saleType === "debt" && (
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-zinc-200/80 space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                {t.selectCustomer} <span className="text-rose-500">*</span>
+              </label>
+            </div>
+
+            {selectedCustomer ? (
+              <div className="flex items-center justify-between bg-zinc-100 rounded-2xl p-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-[#18181b] text-[#a3e635] flex items-center justify-center font-black">
+                    {selectedCustomer.name[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-bold text-[#18181b] text-sm">{selectedCustomer.name}</p>
+                    <p className="text-zinc-500 text-xs">{selectedCustomer.phone ?? "No phone"}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCustomerId("")}
+                  className="text-zinc-400 hover:text-zinc-600"
+                >
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder={t.searchCustomerPlaceholder}
+                  className="w-full h-12 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
+                />
+                <div className="max-h-48 overflow-y-auto space-y-1">
+                  {filteredCustomers.slice(0, 8).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setCustomerId(c.id);
+                        setCustomerSearch("");
+                      }}
+                      className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-100 text-left"
+                    >
+                      <div className="h-9 w-9 rounded-lg bg-zinc-200 text-zinc-600 flex items-center justify-center font-bold text-sm">
+                        {c.name[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[#18181b] text-sm truncate">{c.name}</p>
+                        <p className="text-zinc-400 text-xs">{c.phone ?? "No phone"}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Item picker */}
         <div className="bg-white rounded-3xl p-5 shadow-sm border border-zinc-200/80 space-y-3">
@@ -167,7 +234,7 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
             className="w-full h-12 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
           />
 
-          <div className="max-h-40 overflow-y-auto flex flex-wrap gap-2">
+          <div className="max-h-44 overflow-y-auto flex flex-wrap gap-2">
             {filteredItems.map((item) => {
               const isOut = item.quantity <= 0;
               return (
@@ -183,7 +250,8 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
                   }`}
                 >
                   {item.name}
-                  {isOut && <span className="ml-1 text-[9px]">({t.outOfStockBadge})</span>}
+                  <span className="ml-1 text-[10px] text-zinc-400 font-medium">({item.quantity} {item.unit})</span>
+                  {isOut && <span className="ml-1 text-[9px] text-rose-500 font-bold">({t.outOfStockBadge})</span>}
                 </button>
               );
             })}
@@ -236,7 +304,11 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
 
         <div className="flex items-center gap-3 p-4 bg-zinc-100 border border-zinc-200/80 rounded-2xl">
           <span className="material-symbols-outlined text-[#18181b]">info</span>
-          <p className="text-xs text-zinc-600 leading-relaxed font-medium">{t.infoOrder}</p>
+          <p className="text-xs text-zinc-600 leading-relaxed font-medium">
+            {saleType === "sale"
+              ? "This will deduct stock and record a completed sale immediately."
+              : "This will deduct stock and add the total to the customer's debt tab."}
+          </p>
         </div>
 
         {offlineMessage && (
@@ -258,8 +330,14 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
           disabled={pending || !isValid}
           className="w-full py-4 bg-[#18181b] hover:bg-[#27272a] text-white rounded-2xl font-extrabold text-base shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <span className="material-symbols-outlined text-[#a3e635]">receipt_long</span>
-          {pending ? t.registering : t.registerOrder}
+          <span className="material-symbols-outlined text-[#a3e635]">
+            {saleType === "sale" ? "shopping_cart" : "receipt_long"}
+          </span>
+          {pending
+            ? t.registering
+            : saleType === "sale"
+            ? "Complete Direct Sale"
+            : "Save as Customer Debt"}
         </button>
       </footer>
     </form>

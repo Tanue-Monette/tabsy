@@ -52,3 +52,20 @@ body {
 .material-symbols-outlined {
   font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
 }
+
+button,
+a,
+select,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
+}
+
+button:not(:disabled):hover,
+a:not(:disabled):hover,
+[role="button"]:not(:disabled):hover {
+  transition: all 0.15s ease-in-out;
+}

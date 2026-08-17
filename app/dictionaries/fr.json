@@ -3,7 +3,7 @@
     "dashboard": "Tableau de bord",
     "customers": "Clients",
     "stock": "Stock",
-    "transactions": "Transactions",
+    "transactions": "Inventaire",
     "settings": "Paramètres"
   },
   "auth": {
@@ -59,7 +59,18 @@
     "noCustomers": "Aucun client pour l'instant.",
     "paid": "a payé",
     "tookCredit": "a pris",
-    "credit": "à crédit"
+    "credit": "à crédit",
+    "salesKpis": "KPIs des Ventes",
+    "directPosSales": "Ventes directes POS",
+    "debtsKpis": "KPIs des Dettes Clients",
+    "newDebtsToday": "Nouvelles dettes aujourd'hui",
+    "debtsThisMonth": "Dettes ce mois",
+    "recordPosSale": "Enregistrer vente POS ou dette",
+    "stockItems": "Articles en Stock",
+    "manageInventory": "Gérer les niveaux de stock",
+    "itemLowInStock": "article avec stock faible",
+    "itemsLowInStock": "articles avec stock faible",
+    "tapToReplenish": "Appuyez pour réapprovisionner"
   },
   "customers": {
     "merchantPanel": "Espace marchand",
@@ -181,11 +192,19 @@
     "replenishmentList": "Liste de réapprovisionnement",
     "replenishmentEmpty": "Tout est bien approvisionné — rien à réapprovisionner.",
     "currentQuantity": "Qté actuelle",
-    "threshold": "Seuil"
+    "threshold": "Seuil",
+    "inventoryAndSales": "Stock & Ventes",
+    "salesPerformance": "Performance des ventes de stock",
+    "livePosRevenue": "Chiffre d'affaires POS en direct",
+    "totalStockAssetValue": "Valeur totale des actifs en stock",
+    "itemsNeedRestocking": "articles nécessitent un réapprovisionnement",
+    "itemNeedsRestocking": "article nécessite un réapprovisionnement"
   },
   "order": {
-    "title": "Nouvelle commande",
+    "title": "Nouvelle vente POS",
     "newOrder": "Nouvelle commande",
+    "directSale": "Vente directe (Payé)",
+    "creditTab": "Crédit / Compte client",
     "selectCustomer": "Sélectionner un client",
     "searchCustomerPlaceholder": "Rechercher un client",
     "noCustomerSelected": "Aucun client sélectionné",
@@ -195,10 +214,31 @@
     "quantity": "Qté",
     "noItemsAdded": "Aucun article ajouté pour le moment.",
     "orderTotal": "Total de la commande",
-    "registerOrder": "Enregistrer comme dette",
+    "registerOrder": "Valider la vente directe",
+    "saveDebt": "Enregistrer comme dette client",
     "registering": "Enregistrement…",
-    "infoOrder": "Cela déduira le stock et ajoutera le total comme dette au compte du client immédiatement.",
+    "infoOrder": "Cela déduira le stock et enregistrera une vente terminée immédiatement.",
     "insufficientStock": "Stock insuffisant",
     "outOfStockBadge": "Rupture de stock"
+  },
+  "inventoryReport": {
+    "title": "Registre des ventes de stock",
+    "salesToday": "Ventes aujourd'hui",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois",
+    "searchPlaceholder": "Rechercher des articles vendus...",
+    "exportPdf": "Exporter en PDF",
+    "print": "Imprimer",
+    "totalItemsSold": "Total articles vendus",
+    "totalRevenue": "Chiffre d'affaires total",
+    "itemsSoldList": "Liste des articles vendus",
+    "rankedByRevenue": "Classé par chiffre d'affaires",
+    "itemName": "Nom de l'article",
+    "unit": "Unité",
+    "qtySold": "Qté vendue",
+    "revenue": "Recette (FCFA)",
+    "total": "Total",
+    "noItemsSold": "Aucun article vendu pour cette période.",
+    "posSalesAppear": "Les ventes directes POS apparaîtront automatiquement ici."
   }
 }

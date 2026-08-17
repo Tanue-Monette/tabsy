@@ -146,3 +146,42 @@ export async function archiveStockItem(
   revalidatePath("/stock");
   redirect("/stock");
 }
+
+export async function getStockSalesStats() {
+  const session = await requireSession();
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+  // Start of current week (Monday)
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const startOfWeek = new Date(d.setDate(diff));
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  // Start of current month
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+
+  const { data: salesTx } = await supabase
+    .from("transactions")
+    .select("amount, created_at, type")
+    .eq("merchant_id", session.merchantId)
+    .gte("created_at", startOfMonth);
+
+  const txList = salesTx ?? [];
+
+  const salesToday = txList
+    .filter((t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfToday)
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const salesWeek = txList
+    .filter((t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfWeek.toISOString())
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const salesMonth = txList
+    .filter((t) => t.type === "sale" || t.type === "payment")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  return { salesToday, salesWeek, salesMonth };
+}

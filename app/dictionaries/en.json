@@ -3,7 +3,7 @@
     "dashboard": "Dashboard",
     "customers": "Customers",
     "stock": "Stock",
-    "transactions": "Transactions",
+    "transactions": "Inventory",
     "settings": "Settings"
   },
   "auth": {
@@ -59,7 +59,18 @@
     "noCustomers": "No customers yet.",
     "paid": "paid",
     "tookCredit": "took",
-    "credit": "credit"
+    "credit": "credit",
+    "salesKpis": "Sales KPIs",
+    "directPosSales": "Direct POS Sales",
+    "debtsKpis": "Customer Debts KPIs",
+    "newDebtsToday": "New Debts Today",
+    "debtsThisMonth": "Debts This Month",
+    "recordPosSale": "Record POS sale or debt order",
+    "stockItems": "Stock Items",
+    "manageInventory": "Manage inventory levels",
+    "itemLowInStock": "item low in stock",
+    "itemsLowInStock": "items low in stock",
+    "tapToReplenish": "Tap to replenish your inventory"
   },
   "customers": {
     "merchantPanel": "Merchant Panel",
@@ -181,11 +192,19 @@
     "replenishmentList": "Replenishment List",
     "replenishmentEmpty": "All stocked up — nothing needs replenishing.",
     "currentQuantity": "Current qty",
-    "threshold": "Threshold"
+    "threshold": "Threshold",
+    "inventoryAndSales": "Inventory & Sales",
+    "salesPerformance": "Inventory Sales Performance",
+    "livePosRevenue": "Live POS Revenue",
+    "totalStockAssetValue": "Total Stock Asset Value",
+    "itemsNeedRestocking": "items need restocking",
+    "itemNeedsRestocking": "item needs restocking"
   },
   "order": {
-    "title": "New Order",
+    "title": "New POS Order",
     "newOrder": "New Order",
+    "directSale": "Direct Sale (Paid)",
+    "creditTab": "Credit / Debt Tab",
     "selectCustomer": "Select customer",
     "searchCustomerPlaceholder": "Search customer",
     "noCustomerSelected": "No customer selected",
@@ -195,10 +214,31 @@
     "quantity": "Qty",
     "noItemsAdded": "No items added yet.",
     "orderTotal": "Order Total",
-    "registerOrder": "Register Order as Debt",
+    "registerOrder": "Complete Direct Sale",
+    "saveDebt": "Save as Customer Debt",
     "registering": "Registering…",
-    "infoOrder": "This will deduct stock and add the total as a debt to the customer's tab immediately.",
+    "infoOrder": "This will deduct stock and record a completed sale immediately.",
     "insufficientStock": "Not enough stock",
     "outOfStockBadge": "Out of stock"
+  },
+  "inventoryReport": {
+    "title": "Inventory Sales Ledger",
+    "salesToday": "Sales Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "searchPlaceholder": "Search sold items...",
+    "exportPdf": "Export PDF",
+    "print": "Print",
+    "totalItemsSold": "Total Items Sold",
+    "totalRevenue": "Total Revenue",
+    "itemsSoldList": "Items Sold List",
+    "rankedByRevenue": "Ranked by revenue generated",
+    "itemName": "Item Name",
+    "unit": "Unit",
+    "qtySold": "Qty Sold",
+    "revenue": "Revenue (FCFA)",
+    "total": "Total",
+    "noItemsSold": "No items sold for this period.",
+    "posSalesAppear": "Direct POS sales will automatically appear here."
   }
 }
