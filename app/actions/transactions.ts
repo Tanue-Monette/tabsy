@@ -78,6 +78,22 @@ export async function recordPayment(
 
   const { customer_id, amount, method, reference } = validated.data;
 
+  // Check customer's current balance
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("balance")
+    .eq("id", customer_id)
+    .eq("merchant_id", session.merchantId)
+    .single();
+
+  if (customer && customer.balance > 0 && amount > customer.balance) {
+    return {
+      errors: {
+        amount: [`Payment amount (${amount.toLocaleString()} FCFA) cannot exceed current debt (${customer.balance.toLocaleString()} FCFA).`],
+      },
+    };
+  }
+
   const { error: txError } = await supabase.from("transactions").insert({
     merchant_id: session.merchantId,
     customer_id,

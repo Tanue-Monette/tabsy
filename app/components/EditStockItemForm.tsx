@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateStockItem } from "@/app/actions/stock";
 import PacksEditor from "@/app/components/PacksEditor";
 import type { Dictionary } from "@/app/lib/i18n";
@@ -18,8 +18,28 @@ type Item = {
 
 type Props = { item: Item; t: Dictionary["stock"] };
 
+const PRESET_UNITS = [
+  "pcs",
+  "kg",
+  "g",
+  "liter",
+  "ml",
+  "bottle",
+  "box",
+  "bag",
+  "pack",
+  "can",
+  "crate",
+  "sachet",
+  "unit",
+  "custom",
+];
+
 export default function EditStockItemForm({ item, t }: Props) {
   const [state, action, pending] = useActionState(updateStockItem, undefined);
+  const isPreset = PRESET_UNITS.slice(0, -1).includes(item.unit);
+  const [selectedUnit, setSelectedUnit] = useState(isPreset ? item.unit : "custom");
+  const [customUnit, setCustomUnit] = useState(isPreset ? "" : item.unit);
 
   return (
     <form action={action} className="flex-grow flex flex-col">
@@ -43,17 +63,34 @@ export default function EditStockItemForm({ item, t }: Props) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2" htmlFor="unit">
+            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2" htmlFor="unit_select">
               {t.unit}
             </label>
-            <input
-              id="unit"
-              name="unit"
-              type="text"
-              defaultValue={item.unit}
-              placeholder={t.unitPlaceholder}
-              className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] font-medium"
-            />
+            <select
+              id="unit_select"
+              value={selectedUnit}
+              onChange={(e) => setSelectedUnit(e.target.value)}
+              className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] font-extrabold cursor-pointer"
+            >
+              {PRESET_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u === "custom" ? "Other (Custom...)" : u}
+                </option>
+              ))}
+            </select>
+            {selectedUnit === "custom" ? (
+              <input
+                id="unit"
+                name="unit"
+                type="text"
+                value={customUnit}
+                onChange={(e) => setCustomUnit(e.target.value)}
+                placeholder={t.unitPlaceholder ?? "e.g. bundle"}
+                className="w-full h-14 px-4 mt-2 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] font-medium"
+              />
+            ) : (
+              <input type="hidden" name="unit" value={selectedUnit} />
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

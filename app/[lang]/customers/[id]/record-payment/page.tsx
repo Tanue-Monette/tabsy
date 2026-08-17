@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import RecordPaymentForm from "@/app/components/RecordPaymentForm";
 import { getSession } from "@/app/lib/session";
+import { getCustomer } from "@/app/actions/customers";
 import { getDictionary, isValidLocale, type Locale } from "@/app/lib/i18n";
 
 export default async function RecordPaymentPage({
@@ -16,6 +17,9 @@ export default async function RecordPaymentPage({
   const session = await getSession();
   if (!session) redirect(`/${lang}`);
 
+  const customer = await getCustomer(id);
+  if (!customer) notFound();
+
   return (
     <div className="bg-[#f8f9fa] min-h-screen flex flex-col">
       <header className="w-full px-6 pt-12 pb-6 flex items-center justify-between">
@@ -26,7 +30,12 @@ export default async function RecordPaymentPage({
         <div className="w-12" />
       </header>
 
-      <RecordPaymentForm id={id} t={t.payment} />
+      <RecordPaymentForm
+        id={id}
+        customerName={customer.name}
+        customerBalance={customer.balance}
+        t={t.payment}
+      />
     </div>
   );
 }

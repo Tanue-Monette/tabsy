@@ -8,10 +8,12 @@ import type { Dictionary } from "@/app/lib/i18n";
 
 type Props = {
   id: string;
+  customerName?: string;
+  customerBalance?: number;
   t: Dictionary["payment"];
 };
 
-export default function RecordPaymentForm({ id, t }: Props) {
+export default function RecordPaymentForm({ id, customerName, customerBalance = 0, t }: Props) {
   const router = useRouter();
   const [method, setMethod] = useState<"cash" | "mtn" | "orange">("cash");
   const [amount, setAmount] = useState("");
@@ -19,14 +21,21 @@ export default function RecordPaymentForm({ id, t }: Props) {
   const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
   const [state, action, pending] = useActionState(recordPayment, undefined);
 
-  const isValid = Number(amount) > 0;
+  const amountNum = Number(amount);
+  const isValid = amountNum > 0;
+  const isExceeding = customerBalance > 0 && amountNum > customerBalance;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    if (isExceeding) {
+      e.preventDefault();
+      return;
+    }
+
     if (!navigator.onLine) {
       e.preventDefault();
       await queueOfflineTransaction("payment", {
         customer_id: id,
-        amount: Number(amount),
+        amount: amountNum,
         method,
         reference: reference.trim() || undefined,
       });
@@ -44,8 +53,23 @@ export default function RecordPaymentForm({ id, t }: Props) {
 
       <main className="flex-1 px-6 pb-32">
         <div className="max-w-md mx-auto space-y-8">
+          {/* Customer Debt Info Badge */}
+          {customerName && (
+            <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-amber-900">{customerName}</p>
+                <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider mt-0.5">
+                  Current Debt
+                </p>
+              </div>
+              <span className="text-base font-black text-amber-950">
+                {customerBalance.toLocaleString()} FCFA
+              </span>
+            </div>
+          )}
+
           {/* Amount */}
-          <section className="mt-6 text-center">
+          <section className="mt-4 text-center">
             <label className="text-[10px] font-bold text-zinc-400 mb-2 block uppercase tracking-wider">
               {t.amountPaid}
             </label>
@@ -56,16 +80,26 @@ export default function RecordPaymentForm({ id, t }: Props) {
                 inputMode="numeric"
                 placeholder="0"
                 min="1"
+                max={customerBalance > 0 ? customerBalance : undefined}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="text-[3.5rem] font-black bg-transparent border-none text-center focus:ring-0 p-0 w-48 text-[#18181b]"
+                className={`text-[3.5rem] font-black bg-transparent border-none text-center focus:ring-0 p-0 w-48 transition-colors ${
+                  isExceeding ? "text-rose-600" : "text-[#18181b]"
+                }`}
               />
               <span className="text-xl font-black text-[#a3e635]">FCFA</span>
             </div>
+
+            {isExceeding && (
+              <p className="text-rose-600 text-xs font-bold mt-2 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-xl inline-block">
+                Amount cannot exceed current debt of {customerBalance.toLocaleString()} FCFA
+              </p>
+            )}
+
             {state?.errors?.amount && (
               <p className="text-rose-600 text-xs mt-2">{state.errors.amount[0]}</p>
             )}
-            <div className="w-16 h-1 bg-[#a3e635] mx-auto mt-4 rounded-full" />
+            <div className={`w-16 h-1 mx-auto mt-4 rounded-full transition-colors ${isExceeding ? "bg-rose-500" : "bg-[#a3e635]"}`} />
           </section>
 
           {/* Method */}
@@ -149,7 +183,7 @@ export default function RecordPaymentForm({ id, t }: Props) {
         <div className="max-w-md mx-auto">
           <button
             type="submit"
-            disabled={pending || !isValid}
+            disabled={pending || !isValid || isExceeding}
             className="w-full py-4 rounded-2xl bg-[#a3e635] text-[#121212] font-black text-base shadow-lg shadow-[#a3e635]/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
