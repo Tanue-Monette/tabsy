@@ -6,6 +6,7 @@ import { supabase } from "@/app/lib/supabase";
 import { getSession } from "@/app/lib/session";
 import { z } from "zod";
 import { StockItemSchema, RestockSchema, type ActionState } from "@/app/lib/definitions";
+import { getLocaleFromCookie } from "@/app/lib/i18n-config";
 
 async function requireSession() {
   const session = await getSession();
@@ -78,8 +79,9 @@ export async function addStockItem(
     return { message: "Failed to add item." };
   }
 
-  revalidatePath("/stock");
-  redirect("/stock");
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/stock`);
+  redirect(`/${lang}/stock`);
 }
 
 export async function restockItem(
@@ -118,8 +120,9 @@ export async function restockItem(
       .eq("merchant_id", session.merchantId);
   }
 
-  revalidatePath("/stock");
-  redirect("/stock");
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/stock`);
+  redirect(`/${lang}/stock`);
 }
 
 const ArchiveSchema = z.object({ stock_item_id: z.string().uuid() });
@@ -143,8 +146,9 @@ export async function archiveStockItem(
 
   if (error) return { message: "Failed to archive item." };
 
-  revalidatePath("/stock");
-  redirect("/stock");
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/stock`);
+  redirect(`/${lang}/stock`);
 }
 
 export async function getStockSalesStats() {

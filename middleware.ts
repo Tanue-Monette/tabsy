@@ -36,6 +36,8 @@ export async function middleware(request: NextRequest) {
   const isStatic =
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/icon") ||
+    pathname.startsWith("/manifest") ||
     pathname.includes("/icon") ||
     /\.(png|svg|ico|jpg|jpeg|webp|json|js|css|woff|woff2)$/.test(pathname) ||
     pathname === "/sw.js" ||
@@ -78,5 +80,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icon|icon-512|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json)$).*)",
+  ],
 };

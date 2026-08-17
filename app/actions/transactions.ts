@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import { getSession } from "@/app/lib/session";
 import { DebtSchema, PaymentSchema, type ActionState } from "@/app/lib/definitions";
+import { getLocaleFromCookie } from "@/app/lib/i18n-config";
 
 async function requireSession() {
   const session = await getSession();
@@ -51,10 +52,11 @@ export async function addDebt(
 
   if (balError) return { message: "Debt recorded but balance update failed." };
 
-  revalidatePath(`/customers/${customer_id}`);
-  revalidatePath("/customers");
-  revalidatePath("/dashboard");
-  redirect(`/customers/${customer_id}`);
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/customers/${customer_id}`);
+  revalidatePath(`/${lang}/customers`);
+  revalidatePath(`/${lang}/dashboard`);
+  redirect(`/${lang}/customers/${customer_id}`);
 }
 
 export async function recordPayment(
@@ -95,10 +97,11 @@ export async function recordPayment(
 
   if (balError) return { message: "Payment recorded but balance update failed." };
 
-  revalidatePath(`/customers/${customer_id}`);
-  revalidatePath("/customers");
-  revalidatePath("/dashboard");
-  redirect(`/customers/${customer_id}`);
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/customers/${customer_id}`);
+  revalidatePath(`/${lang}/customers`);
+  revalidatePath(`/${lang}/dashboard`);
+  redirect(`/${lang}/customers/${customer_id}`);
 }
 
 export async function getDashboardStats(merchantId: string) {

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { supabase } from "@/app/lib/supabase";
 import { getSession } from "@/app/lib/session";
 import { CreateOrderSchema, type ActionState } from "@/app/lib/definitions";
+import { getLocaleFromCookie } from "@/app/lib/i18n-config";
 
 async function requireSession() {
   const session = await getSession();
@@ -168,8 +169,9 @@ export async function createOrder(
     });
   }
 
-  revalidatePath("/transactions");
-  redirect("/transactions");
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/transactions`);
+  redirect(`/${lang}/transactions`);
 }
 
 export const createOrderAsDebt = createOrder;
