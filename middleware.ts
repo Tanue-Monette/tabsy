@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import Negotiator from "negotiator";
 import { match } from "@formatjs/intl-localematcher";
 import { decrypt } from "@/app/lib/session";
+import { decryptAdminSession } from "@/app/lib/admin-session";
 import { locales, defaultLocale, type Locale } from "@/app/lib/i18n-config";
 
 const COOKIE_NAME = "tabsy_session";
+const ADMIN_COOKIE_NAME = "tabsy_admin_session";
 const LOCALE_COOKIE = "tabsy_locale";
 
 const PUBLIC_PATHS = ["/", "/register", "/forgot-pin", "/reset-pin"];
@@ -45,6 +47,25 @@ export async function middleware(request: NextRequest) {
 
   if (isStatic) return NextResponse.next();
 
+  // Handle Admin Routes
+  if (pathname.startsWith("/admin")) {
+    const adminToken = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+    const adminSession = adminToken ? await decryptAdminSession(adminToken) : null;
+    const isAdminAuthenticated = !!adminSession && new Date(adminSession.expiresAt) > new Date();
+
+    const isAdminLogin = pathname === "/admin/login";
+
+    if (isAdminAuthenticated && isAdminLogin) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+
+    if (!isAdminAuthenticated && !isAdminLogin) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+
+    return NextResponse.next();
+  }
+
   // Check if pathname already has a locale prefix
   const pathnameLocale = locales.find(
     (l) => pathname.startsWith(`/${l}/`) || pathname === `/${l}`
@@ -68,6 +89,8 @@ export async function middleware(request: NextRequest) {
   const session = token ? await decrypt(token) : null;
   const isAuthenticated = !!session && new Date(session.expiresAt) > new Date();
 
+  // For suspended merchants, we could check their status in a server layout/page.
+  // Middleware handles basic token presence.
   if (isAuthenticated && isPublicRoute) {
     return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }

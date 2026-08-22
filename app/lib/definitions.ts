@@ -111,8 +111,32 @@ export type SessionPayload = {
   expiresAt: Date;
 };
 
+// ─── Admin Schemas ───────────────────────────────────────────────────────────
+
+export const AdminLoginSchema = z.object({
+  email: z.string().email("Invalid email address").trim(),
+  password: z.string().min(6, "Password is too short").trim(),
+});
+
+export const AdminMerchantCreateSchema = RegisterSchema.extend({
+  status: z.enum(["active", "suspended"]).default("active"),
+});
+
+export const SystemConfigSchema = z.object({
+  default_currency: z.string().min(1).default("FCFA"),
+  registration_open: z.boolean().default(true),
+  maintenance_mode: z.boolean().default(false),
+});
+
+export type AdminSessionPayload = {
+  adminId: string;
+  role: "super_admin" | "admin";
+  expiresAt: Date;
+};
+
 // ─── Action State ────────────────────────────────────────────────────────────
 
 export type ActionState =
   | { errors?: Record<string, string[]>; message?: string }
   | undefined;
+
