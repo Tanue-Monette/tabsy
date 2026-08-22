@@ -11,6 +11,7 @@ import {
   StockItemPacksSchema,
   EditStockItemSchema,
   RestockSchema,
+  AdjustStockSchema,
   type ActionState,
 } from "@/app/lib/definitions";
 import { getLocaleFromCookie } from "@/app/lib/get-locale";
@@ -265,6 +266,67 @@ export async function restockItem(
   const lang = await getLocaleFromCookie();
   revalidatePath(`/${lang}/stock`);
   redirect(`/${lang}/stock`);
+}
+
+/**
+ * Corrects a mistake in stock quantity (typo, miscount, damage, loss).
+ * The merchant either types the correct final quantity ("set") or a
+ * +/- amount to add or remove ("delta"). Always writes to the movement
+ * ledger, never touches stock_items.quantity directly, and always
+ * requires a note explaining the correction.
+ */
+export async function adjustStockItem(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await requireSession();
+
+  const validated = AdjustStockSchema.safeParse({
+    stock_item_id: formData.get("stock_item_id"),
+    mode: formData.get("mode"),
+    value: formData.get("value"),
+    direction: formData.get("direction") || "add",
+    note: formData.get("note"),
+  });
+
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+
+  const { stock_item_id, mode, value, direction, note } = validated.data;
+
+  const { data: item } = await supabase
+    .from("stock_items")
+    .select("quantity")
+    .eq("id", stock_item_id)
+    .eq("merchant_id", session.merchantId)
+    .single();
+
+  if (!item) return { message: "Item not found." };
+
+  const delta = mode === "set" ? value - item.quantity : direction === "add" ? value : -value;
+  const newQuantity = item.quantity + delta;
+
+  if (newQuantity < 0) {
+    return {
+      message: `That would leave a negative quantity (current: ${item.quantity.toLocaleString()}).`,
+    };
+  }
+
+  const { error } = await supabase.from("stock_movements").insert({
+    merchant_id: session.merchantId,
+    stock_item_id,
+    movement_type: "adjustment",
+    quantity_change: delta,
+    note,
+  });
+
+  if (error) return { message: "Failed to record adjustment." };
+
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/stock`);
+  revalidatePath(`/${lang}/stock/${stock_item_id}/edit`);
+  redirect(`/${lang}/stock/${stock_item_id}/edit`);
 }
 
 const ArchiveSchema = z.object({ stock_item_id: z.string().uuid() });

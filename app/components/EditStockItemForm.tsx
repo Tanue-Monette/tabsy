@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { updateStockItem } from "@/app/actions/stock";
 import PacksEditor from "@/app/components/PacksEditor";
 import type { Dictionary } from "@/app/lib/i18n";
@@ -16,7 +17,7 @@ type Item = {
   stock_item_packs: { id: string; name: string; size: number }[];
 };
 
-type Props = { item: Item; t: Dictionary["stock"] };
+type Props = { item: Item; t: Dictionary["stock"]; lang: string };
 
 const PRESET_UNITS = [
   "pcs",
@@ -35,7 +36,7 @@ const PRESET_UNITS = [
   "custom",
 ];
 
-export default function EditStockItemForm({ item, t }: Props) {
+export default function EditStockItemForm({ item, t, lang }: Props) {
   const [state, action, pending] = useActionState(updateStockItem, undefined);
   const isPreset = PRESET_UNITS.slice(0, -1).includes(item.unit);
   const [selectedUnit, setSelectedUnit] = useState(isPreset ? item.unit : "custom");
@@ -142,11 +143,19 @@ export default function EditStockItemForm({ item, t }: Props) {
 
           <div className="flex items-center gap-3 p-3 bg-zinc-100 rounded-2xl">
             <span className="material-symbols-outlined text-zinc-500 text-lg">info</span>
-            <p className="text-zinc-500 text-xs leading-relaxed">
+            <p className="text-zinc-500 text-xs leading-relaxed flex-1">
               {t.currentQuantity}: <span className="font-bold text-[#18181b]">{item.quantity.toLocaleString()} {item.unit}</span>
               {" · "}{t.editQuantityHint}
             </p>
           </div>
+
+          <Link
+            href={`/${lang}/stock/${item.id}/adjust`}
+            className="flex items-center justify-center gap-2 text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-100 py-3 rounded-2xl font-bold text-xs transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">edit_note</span>
+            {t.adjustStockLink}
+          </Link>
         </div>
 
         <PacksEditor initialPacks={item.stock_item_packs} t={t} />
