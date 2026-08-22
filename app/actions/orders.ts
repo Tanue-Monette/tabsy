@@ -159,15 +159,24 @@ export async function createOrder(
 
     await supabase.from("order_items").insert(orderItemsPayload);
 
-    // 5. Record Transaction Log as sale
-    await supabase.from("transactions").insert({
-      merchant_id: session.merchantId,
-      customer_id: customer_id ?? null,
-      type: "sale",
-      amount: orderTotal,
-      description: `Direct Sale (#${newOrder.id.slice(0, 8)})`,
-      method: payment_method,
-    });
+    // 5. Record Transaction Log as sale, and link it back to the order so
+    // it can be safely voided later if the merchant marks this as debt.
+    const { data: newTx } = await supabase
+      .from("transactions")
+      .insert({
+        merchant_id: session.merchantId,
+        customer_id: customer_id ?? null,
+        type: "sale",
+        amount: orderTotal,
+        description: `Direct Sale (#${newOrder.id.slice(0, 8)})`,
+        method: payment_method,
+      })
+      .select("id")
+      .single();
+
+    if (newTx) {
+      await supabase.from("orders").update({ transaction_id: newTx.id }).eq("id", newOrder.id);
+    }
   }
 
   const lang = await getLocaleFromCookie();
@@ -337,3 +346,160 @@ export const getPaymentStatsReport = cache(async (): Promise<PaymentStatsReport>
     orangeMonth: monthTxs.filter((t) => t.method === "orange").reduce((sum, t) => sum + t.amount, 0),
   };
 });
+
+export type OrderListItem = {
+  id: string;
+  total_amount: number;
+  payment_type: "cash" | "credit" | "mtn" | "orange";
+  created_at: string;
+  customer: { id: string; name: string } | null;
+  item_count: number;
+};
+
+// Recent orders for the front-office order list. Capped to a reasonable
+// window so this stays fast as history grows — client-side pagination
+// (PaginationControls) handles slicing the display.
+export const getOrders = cache(async (): Promise<OrderListItem[]> => {
+  const session = await requireSession();
+
+  const { data } = await supabase
+    .from("orders")
+    .select("id, total_amount, payment_type, created_at, customers(id, name), order_items(quantity)")
+    .eq("merchant_id", session.merchantId)
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  return (data ?? []).map((o) => {
+    const customer = o.customers as unknown as { id: string; name: string } | null;
+    return {
+      id: o.id,
+      total_amount: o.total_amount,
+      payment_type: o.payment_type,
+      created_at: o.created_at,
+      customer,
+      item_count: (o.order_items ?? []).length,
+    };
+  });
+});
+
+export type OrderDetail = {
+  id: string;
+  total_amount: number;
+  payment_type: "cash" | "credit" | "mtn" | "orange";
+  created_at: string;
+  customer: { id: string; name: string; phone: string | null } | null;
+  items: { name: string; unit: string; quantity: number; unit_price: number }[];
+};
+
+export async function getOrderById(orderId: string): Promise<OrderDetail | null> {
+  const session = await requireSession();
+
+  const { data } = await supabase
+    .from("orders")
+    .select(
+      "id, total_amount, payment_type, created_at, customers(id, name, phone), order_items(quantity, unit_price, stock_items(name, unit))"
+    )
+    .eq("id", orderId)
+    .eq("merchant_id", session.merchantId)
+    .single();
+
+  if (!data) return null;
+
+  const customer = data.customers as unknown as { id: string; name: string; phone: string | null } | null;
+  const items = (data.order_items ?? []).map((raw) => {
+    const item = raw as unknown as {
+      quantity: number;
+      unit_price: number;
+      stock_items: { name: string; unit: string } | null;
+    };
+    return {
+      name: item.stock_items?.name ?? "Item",
+      unit: item.stock_items?.unit ?? "",
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+    };
+  });
+
+  return {
+    id: data.id,
+    total_amount: data.total_amount,
+    payment_type: data.payment_type,
+    created_at: data.created_at,
+    customer,
+    items,
+  };
+}
+
+/**
+ * Marks an existing direct-sale order (cash/mtn/orange) as a debt sale:
+ * voids the original sale transaction, creates a real debt against the
+ * chosen customer, and relinks the order — atomically via the
+ * convert_order_to_debt RPC. Refuses if the order is already credit.
+ */
+export async function setOrderAsDebt(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await requireSession();
+
+  const orderId = String(formData.get("order_id") ?? "");
+  const customerId = String(formData.get("customer_id") ?? "");
+
+  if (!orderId || !customerId) {
+    return { message: "Please select a customer." };
+  }
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select("total_amount, payment_type")
+    .eq("id", orderId)
+    .eq("merchant_id", session.merchantId)
+    .single();
+
+  if (!order) return { message: "Order not found." };
+  if (order.payment_type === "credit") return { message: "This order is already a debt sale." };
+
+  const { data: merchantData } = await supabase
+    .from("merchants")
+    .select("settings")
+    .eq("id", session.merchantId)
+    .single();
+
+  const maxDebtLimit = Number((merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0);
+
+  if (maxDebtLimit > 0) {
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("balance")
+      .eq("id", customerId)
+      .single();
+    const currentBalance = Number(customer?.balance ?? 0);
+
+    if (currentBalance + order.total_amount > maxDebtLimit) {
+      return {
+        message: `Debt limit exceeded! Maximum allowed debt is ${maxDebtLimit.toLocaleString()} FCFA (current: ${currentBalance.toLocaleString()} FCFA).`,
+      };
+    }
+  }
+
+  const { error } = await supabase.rpc("convert_order_to_debt", {
+    p_order_id: orderId,
+    p_merchant_id: session.merchantId,
+    p_customer_id: customerId,
+  });
+
+  if (error) {
+    return {
+      message: error.message?.includes("already a debt")
+        ? "This order is already a debt sale."
+        : "Failed to mark order as debt.",
+    };
+  }
+
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/orders/${orderId}`);
+  revalidatePath(`/${lang}/orders`);
+  revalidatePath(`/${lang}/customers/${customerId}`);
+  revalidatePath(`/${lang}/dashboard`);
+  redirect(`/${lang}/orders/${orderId}`);
+}

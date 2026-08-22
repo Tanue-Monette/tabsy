@@ -259,5 +259,22 @@
     "total": "Total",
     "noItemsSold": "No items sold for this period.",
     "posSalesAppear": "Direct POS sales will automatically appear here."
+  },
+  "orders": {
+    "title": "Orders",
+    "receiptTitle": "Receipt",
+    "searchPlaceholder": "Search by customer",
+    "noOrders": "No orders yet.",
+    "walkIn": "Walk-in",
+    "item": "item",
+    "items": "items",
+    "customer": "Customer",
+    "total": "Total",
+    "printReceipt": "Print Receipt",
+    "markAsDebt": "Mark as Debt",
+    "selectCustomerForDebt": "Select the customer for this debt",
+    "searchCustomerPlaceholder": "Search customer",
+    "confirmMarkAsDebt": "Confirm — Add to Customer's Tab",
+    "saving": "Saving…"
   }
 }

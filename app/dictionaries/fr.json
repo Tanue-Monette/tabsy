@@ -259,5 +259,22 @@
     "total": "Total",
     "noItemsSold": "Aucun article vendu pour cette période.",
     "posSalesAppear": "Les ventes directes POS apparaîtront automatiquement ici."
+  },
+  "orders": {
+    "title": "Commandes",
+    "receiptTitle": "Reçu",
+    "searchPlaceholder": "Rechercher par client",
+    "noOrders": "Aucune commande pour le moment.",
+    "walkIn": "Client de passage",
+    "item": "article",
+    "items": "articles",
+    "customer": "Client",
+    "total": "Total",
+    "printReceipt": "Imprimer le reçu",
+    "markAsDebt": "Marquer comme dette",
+    "selectCustomerForDebt": "Sélectionner le client pour cette dette",
+    "searchCustomerPlaceholder": "Rechercher un client",
+    "confirmMarkAsDebt": "Confirmer — Ajouter au compte du client",
+    "saving": "Enregistrement…"
   }
 }
