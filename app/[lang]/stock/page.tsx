@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import BottomNav from "@/app/components/BottomNav";
 import StockList from "@/app/components/StockList";
-import AmountBanner from "@/app/components/AmountBanner";
+import StockValueCards from "@/app/components/StockValueCards";
 import { getSession } from "@/app/lib/session";
-import { getStockItems, getReplenishmentList, getStockSalesStats } from "@/app/actions/stock";
+import { getStockItems, getReplenishmentList, getStockSalesStats, getProfitStats } from "@/app/actions/stock";
 import { getDictionary, isValidLocale, type Locale } from "@/app/lib/i18n";
 
 export default async function StockPage({
@@ -19,13 +19,17 @@ export default async function StockPage({
   const session = await getSession();
   if (!session) redirect(`/${lang}`);
 
-  const [items, replenishment, salesStats] = await Promise.all([
+  const [items, replenishment, salesStats, profitStats] = await Promise.all([
     getStockItems(),
     getReplenishmentList(),
     getStockSalesStats(),
+    getProfitStats(),
   ]);
 
-  const stockValue = items.reduce((sum, i) => sum + i.quantity * i.sell_price, 0);
+  // Capital tied up in current inventory — at COST, not sell price. This is
+  // what the merchant actually spent, not what they'd get if they sold
+  // everything. It falls as stock sells, rises when they restock.
+  const stockCapitalValue = items.reduce((sum, i) => sum + i.quantity * i.cost_price, 0);
 
   return (
     <div className="bg-[#f8f9fa] min-h-screen pb-32">
@@ -178,8 +182,13 @@ export default async function StockPage({
           </div>
         </section>
 
-        {/* Total Stock Value */}
-        <AmountBanner title={t.stock.totalStockAssetValue} amount={stockValue} />
+        {/* Stock Capital (cost basis) vs Profit — kept separate deliberately */}
+        <StockValueCards
+          capitalLabel={t.stock.totalStockAssetValue}
+          capitalValue={stockCapitalValue}
+          profitLabel={t.stock.profitThisMonth}
+          profitValue={profitStats.profitMonth}
+        />
 
         {/* Low Stock Warning Banner */}
         {replenishment.length > 0 && (

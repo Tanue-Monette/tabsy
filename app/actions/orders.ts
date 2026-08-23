@@ -15,6 +15,43 @@ async function requireSession() {
 }
 
 /**
+ * Resolves the customer to attach a debt to: uses the given customer_id if
+ * present, otherwise creates a new customer inline from a name (+ optional
+ * phone) typed directly into the sale flow — so merchants never have to
+ * leave a debt-sale screen just to register a customer that isn't in the
+ * list yet.
+ */
+async function resolveOrCreateCustomer(
+  merchantId: string,
+  customerId: string | null | undefined,
+  newName: string | undefined,
+  newPhone: string | undefined
+): Promise<{ customerId: string } | { error: string }> {
+  if (customerId) return { customerId };
+
+  if (!newName || newName.trim().length === 0) {
+    return { error: "Please select a customer or enter a name for a new one." };
+  }
+
+  const { data: newCustomer, error } = await supabase
+    .from("customers")
+    .insert({
+      merchant_id: merchantId,
+      name: newName.trim(),
+      phone: newPhone?.trim() || null,
+      balance: 0,
+    })
+    .select("id")
+    .single();
+
+  if (error || !newCustomer) {
+    return { error: "Failed to create the new customer." };
+  }
+
+  return { customerId: newCustomer.id };
+}
+
+/**
  * Registers an order (list of items + quantities) for a customer.
  * This is the "commande" flow: it auto-creates a debt for the total
  * and deducts stock, atomically, via the create_order_as_debt RPC.
@@ -38,11 +75,15 @@ export async function createOrder(
 
   const rawCustomerId = formData.get("customer_id");
   const customer_id = rawCustomerId ? String(rawCustomerId) : null;
+  const new_customer_name = (formData.get("new_customer_name") as string) || undefined;
+  const new_customer_phone = (formData.get("new_customer_phone") as string) || undefined;
   const sale_type = (formData.get("sale_type") as "sale" | "debt") || "sale";
   const payment_method = (formData.get("payment_method") as "cash" | "mtn" | "orange") || "cash";
 
   const validated = CreateOrderSchema.safeParse({
     customer_id,
+    new_customer_name,
+    new_customer_phone,
     sale_type,
     payment_method,
     items: parsedItems,
@@ -58,11 +99,17 @@ export async function createOrder(
     0
   );
 
-  // If debt sale, customer is required and max debt limit must be checked
+  // If debt sale, resolve (or create) the customer and check max debt limit
+  let resolvedCustomerId: string | null = customer_id;
   if (sale_type === "debt") {
-    if (!customer_id) {
-      return { message: "Please select a customer for debt credit sales." };
-    }
+    const resolved = await resolveOrCreateCustomer(
+      session.merchantId,
+      customer_id,
+      validated.data.new_customer_name,
+      validated.data.new_customer_phone
+    );
+    if ("error" in resolved) return { message: resolved.error };
+    resolvedCustomerId = resolved.customerId;
 
     const { data: merchantData } = await supabase
       .from("merchants")
@@ -76,7 +123,7 @@ export async function createOrder(
       const { data: existingCustomer } = await supabase
         .from("customers")
         .select("balance")
-        .eq("id", customer_id)
+        .eq("id", resolvedCustomerId)
         .single();
       const currentBalance = Number(existingCustomer?.balance ?? 0);
 
@@ -90,7 +137,7 @@ export async function createOrder(
     // Call RPC for atomic order + stock deduction + debt balance increment
     const { data: orderId, error } = await supabase.rpc("create_order_as_debt", {
       p_merchant_id: session.merchantId,
-      p_customer_id: customer_id,
+      p_customer_id: resolvedCustomerId,
       p_items: items,
     });
 
@@ -443,10 +490,13 @@ export async function setOrderAsDebt(
   const session = await requireSession();
 
   const orderId = String(formData.get("order_id") ?? "");
-  const customerId = String(formData.get("customer_id") ?? "");
+  const rawCustomerId = formData.get("customer_id");
+  const customerId = rawCustomerId ? String(rawCustomerId) : null;
+  const newCustomerName = (formData.get("new_customer_name") as string) || undefined;
+  const newCustomerPhone = (formData.get("new_customer_phone") as string) || undefined;
 
-  if (!orderId || !customerId) {
-    return { message: "Please select a customer." };
+  if (!orderId) {
+    return { message: "Order not found." };
   }
 
   const { data: order } = await supabase
@@ -458,6 +508,10 @@ export async function setOrderAsDebt(
 
   if (!order) return { message: "Order not found." };
   if (order.payment_type === "credit") return { message: "This order is already a debt sale." };
+
+  const resolved = await resolveOrCreateCustomer(session.merchantId, customerId, newCustomerName, newCustomerPhone);
+  if ("error" in resolved) return { message: resolved.error };
+  const resolvedCustomerId = resolved.customerId;
 
   const { data: merchantData } = await supabase
     .from("merchants")
@@ -471,7 +525,7 @@ export async function setOrderAsDebt(
     const { data: customer } = await supabase
       .from("customers")
       .select("balance")
-      .eq("id", customerId)
+      .eq("id", resolvedCustomerId)
       .single();
     const currentBalance = Number(customer?.balance ?? 0);
 
@@ -485,7 +539,7 @@ export async function setOrderAsDebt(
   const { error } = await supabase.rpc("convert_order_to_debt", {
     p_order_id: orderId,
     p_merchant_id: session.merchantId,
-    p_customer_id: customerId,
+    p_customer_id: resolvedCustomerId,
   });
 
   if (error) {
@@ -499,7 +553,8 @@ export async function setOrderAsDebt(
   const lang = await getLocaleFromCookie();
   revalidatePath(`/${lang}/orders/${orderId}`);
   revalidatePath(`/${lang}/orders`);
-  revalidatePath(`/${lang}/customers/${customerId}`);
+  revalidatePath(`/${lang}/customers/${resolvedCustomerId}`);
+  revalidatePath(`/${lang}/customers`);
   revalidatePath(`/${lang}/dashboard`);
   redirect(`/${lang}/orders/${orderId}`);
 }

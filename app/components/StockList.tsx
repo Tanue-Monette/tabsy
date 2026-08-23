@@ -124,7 +124,8 @@ export default function StockList({
           {!search && <p className="text-zinc-400 text-xs mt-1">{t.addFirst}</p>}
         </div>
       ) : (
-        <div className="space-y-3">
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {paginated.map((item) => {
             const isOut = item.quantity <= 0;
             const isLow = !isOut && item.quantity <= item.low_stock_threshold;
@@ -153,47 +154,49 @@ export default function StockList({
             return (
               <div
                 key={item.id}
-                className="bg-white p-4 rounded-3xl flex items-center justify-between border border-zinc-200/80 shadow-sm"
+                className="bg-white p-3.5 rounded-2xl border border-zinc-200/80 shadow-sm flex flex-col gap-2 min-w-0"
               >
-                <Link href={`/${lang}/stock/${item.id}/edit`} className="flex items-center gap-4 min-w-0">
-                  <div className="h-12 w-12 rounded-2xl flex items-center justify-center font-black text-lg bg-zinc-100 text-zinc-500 shrink-0">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center font-black text-base bg-zinc-100 text-zinc-500 shrink-0">
                     {item.name[0].toUpperCase()}
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="font-extrabold text-[#18181b] text-base truncate">{item.name}</h3>
-                    <p className="text-zinc-500 text-xs font-medium">
-                      {item.quantity.toLocaleString()} {item.unit} · {item.sell_price.toLocaleString()} FCFA
-                    </p>
-                    {packBreakdown && <p className="text-zinc-400 text-[11px] mt-0.5">{packBreakdown}</p>}
-                  </div>
-                </Link>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[10px] uppercase tracking-tight font-bold px-2 py-1 rounded-lg border ${statusColor}`}>
+                  <span className={`text-[9px] uppercase tracking-tight font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${statusColor}`}>
                     {statusLabel}
                   </span>
-                  <Link
-                    href={`/${lang}/stock/${item.id}/restock`}
-                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#18181b] text-[#a3e635] active:scale-95 transition-transform"
-                  >
-                    <span className="material-symbols-outlined text-lg">add</span>
-                  </Link>
                 </div>
+
+                <Link href={`/${lang}/stock/${item.id}/edit`} className="min-w-0">
+                  <h3 className="font-extrabold text-[#18181b] text-sm truncate">{item.name}</h3>
+                  <p className="text-zinc-500 text-[11px] font-medium truncate">
+                    {item.quantity.toLocaleString()} {item.unit} · {item.sell_price.toLocaleString()} FCFA
+                  </p>
+                  {packBreakdown && <p className="text-zinc-400 text-[10px] mt-0.5 truncate">{packBreakdown}</p>}
+                </Link>
+
+                <Link
+                  href={`/${lang}/stock/${item.id}/restock`}
+                  className="mt-1 w-full flex items-center justify-center gap-1 bg-[#18181b] text-[#a3e635] rounded-xl py-2 text-[11px] font-bold active:scale-95 transition-transform"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span>
+                  {t.restock}
+                </Link>
               </div>
             );
           })}
-
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filtered.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(sz) => {
-              setPageSize(sz);
-              setCurrentPage(1);
-            }}
-          />
         </div>
+
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(sz) => {
+            setPageSize(sz);
+            setCurrentPage(1);
+          }}
+        />
+        </>
       )}
     </section>
   );

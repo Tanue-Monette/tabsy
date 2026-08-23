@@ -26,9 +26,13 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "mtn" | "orange">("cash");
   const [customerId, setCustomerId] = useState(preselectedCustomerId ?? "");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [itemSearch, setItemSearch] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
   const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   const selectedCustomer = customers.find((c) => c.id === customerId);
 
@@ -69,13 +73,21 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
     lines.map((l) => ({ stock_item_id: l.stock_item_id, quantity: l.quantity, unit_price: l.unit_price }))
   );
 
-  const isValid = lines.length > 0 && (saleType === "sale" || customerId.length > 0);
+  const isValid =
+    lines.length > 0 &&
+    (saleType === "sale" || customerId.length > 0 || (showNewCustomer && newCustomerName.trim().length > 0));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     if (!navigator.onLine) {
       e.preventDefault();
       if (!isValid) return;
 
+      if (saleType === "debt" && !customerId && showNewCustomer) {
+        setClientError("Adding a new customer requires an internet connection. Please pick an existing customer, or try again once you're back online.");
+        return;
+      }
+
+      setClientError(null);
       await queueOfflineTransaction("order", {
         customer_id: customerId || undefined,
         amount: total,
@@ -97,6 +109,8 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
   return (
     <form action={action} onSubmit={handleSubmit} className="flex-grow flex flex-col">
       <input type="hidden" name="customer_id" value={customerId} />
+      <input type="hidden" name="new_customer_name" value={showNewCustomer ? newCustomerName : ""} />
+      <input type="hidden" name="new_customer_phone" value={showNewCustomer ? newCustomerPhone : ""} />
       <input type="hidden" name="sale_type" value={saleType} />
       <input type="hidden" name="payment_method" value={paymentMethod} />
       <input type="hidden" name="items" value={itemsJson} />
@@ -189,6 +203,37 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
+            ) : showNewCustomer ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] font-bold text-zinc-500">{t.newCustomerName}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewCustomer(false);
+                      setNewCustomerName("");
+                      setNewCustomerPhone("");
+                    }}
+                    className="text-zinc-400 hover:text-zinc-600 text-xs font-bold"
+                  >
+                    {t.cancel}
+                  </button>
+                </div>
+                <input
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  placeholder={t.customerNamePlaceholder}
+                  autoFocus
+                  className="w-full h-12 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
+                />
+                <input
+                  value={newCustomerPhone}
+                  onChange={(e) => setNewCustomerPhone(e.target.value)}
+                  placeholder={t.customerPhoneOptional}
+                  type="tel"
+                  className="w-full h-12 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
+                />
+              </div>
             ) : (
               <>
                 <input
@@ -218,6 +263,22 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
                     </button>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewCustomer(true);
+                    setNewCustomerName(customerSearch);
+                  }}
+                  className="w-full flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-zinc-300 hover:bg-zinc-50 text-left"
+                >
+                  <div className="h-9 w-9 rounded-lg bg-[#a3e635]/20 text-[#365314] flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-lg">person_add</span>
+                  </div>
+                  <p className="font-bold text-[#18181b] text-sm">
+                    {t.addNewCustomer}
+                    {customerSearch && <span className="text-zinc-400 font-medium"> "{customerSearch}"</span>}
+                  </p>
+                </button>
               </>
             )}
           </div>
@@ -310,6 +371,12 @@ export default function NewOrderForm({ customers, stockItems, t, lang, preselect
               : "This will deduct stock and add the total to the customer's debt tab."}
           </p>
         </div>
+
+        {clientError && (
+          <p className="text-rose-600 text-sm text-center bg-rose-50 border border-rose-100 px-4 py-3 rounded-2xl">
+            {clientError}
+          </p>
+        )}
 
         {offlineMessage && (
           <p className="text-[#18181b] font-bold text-sm text-center bg-[#a3e635]/20 border border-[#a3e635] px-4 py-3 rounded-2xl">

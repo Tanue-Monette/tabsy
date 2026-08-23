@@ -159,55 +159,66 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <>
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {paginated.map((c) => {
             const isCleared = c.balance <= 0;
             return (
               <Link
                 key={c.id}
                 href={`/${lang}/customers/${c.id}`}
-                className="bg-white p-4 rounded-3xl flex items-center justify-between active:scale-[0.98] transition-all border border-zinc-200/80 hover:border-zinc-300 block shadow-sm"
+                className="bg-white p-3.5 rounded-2xl border border-zinc-200/80 shadow-sm flex flex-col gap-2 min-w-0 active:scale-[0.98] transition-all hover:border-zinc-300"
               >
-                <div className="flex items-center gap-4">
-                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black text-lg ${isCleared ? "bg-[#a3e635]/20 text-[#365314]" : "bg-rose-50 text-rose-600 border border-rose-100"}`}>
+                <div className="flex items-start justify-between gap-1">
+                  <div
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center font-black text-base shrink-0 ${
+                      isCleared ? "bg-[#a3e635]/20 text-[#365314]" : "bg-rose-50 text-rose-600 border border-rose-100"
+                    }`}
+                  >
                     {c.name[0].toUpperCase()}
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-[#18181b] text-base">{c.name}</h3>
-                    <p className="text-zinc-500 text-xs font-medium">{c.phone ?? "No phone"}</p>
-                  </div>
+                  {c.isPending && (
+                    <span className="text-[8px] px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-extrabold lowercase border border-amber-200 shrink-0">
+                      ⏳ sync
+                    </span>
+                  )}
                 </div>
-                <div className="text-right">
-                  <div className={`font-black text-lg ${isCleared ? "text-emerald-700" : "text-rose-600"}`}>
-                    {c.balance.toLocaleString()}{" "}
-                    <span className="text-[10px] opacity-60">FCFA</span>
-                  </div>
-                  <span className={`text-[10px] uppercase tracking-tighter font-bold flex items-center justify-end gap-1 ${isCleared ? "text-emerald-700" : "text-rose-600"}`}>
+
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-[#18181b] text-sm truncate">{c.name}</h3>
+                  <p className="text-zinc-400 text-[11px] font-medium truncate">{c.phone ?? "No phone"}</p>
+                </div>
+
+                <div className="flex items-center justify-between mt-1 gap-1">
+                  <span
+                    className={`text-[9px] uppercase tracking-tighter font-bold flex items-center gap-1 shrink-0 ${
+                      isCleared ? "text-emerald-700" : "text-rose-600"
+                    }`}
+                  >
                     <span className={`w-1.5 h-1.5 rounded-full ${isCleared ? "bg-emerald-500" : "bg-rose-500"}`} />
                     {isCleared ? "Cleared" : "Unpaid"}
-                    {c.isPending && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[9px] lowercase border border-amber-200">
-                        ⏳ pending sync
-                      </span>
-                    )}
+                  </span>
+                  <span className={`font-black text-sm truncate ${isCleared ? "text-emerald-700" : "text-rose-600"}`}>
+                    {c.balance.toLocaleString()}
                   </span>
                 </div>
               </Link>
             );
           })}
-
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filtered.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(sz) => {
-              setPageSize(sz);
-              setCurrentPage(1);
-            }}
-          />
         </div>
+
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(sz) => {
+            setPageSize(sz);
+            setCurrentPage(1);
+          }}
+        />
+        </>
       )}
     </section>
   );

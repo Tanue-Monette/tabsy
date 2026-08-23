@@ -27,6 +27,9 @@ export default function OrderReceiptClient({ order, customers, merchantName, sho
   const [showDebtForm, setShowDebtForm] = useState(false);
   const [customerId, setCustomerId] = useState(order.customer?.id ?? "");
   const [customerSearch, setCustomerSearch] = useState("");
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
 
   const date = new Date(order.created_at);
   const selectedCustomer = customers.find((c) => c.id === customerId);
@@ -118,6 +121,8 @@ export default function OrderReceiptClient({ order, customers, merchantName, sho
         <form action={action} className="bg-white rounded-3xl border border-zinc-200/80 shadow-sm p-5 space-y-3 print:hidden">
           <input type="hidden" name="order_id" value={order.id} />
           <input type="hidden" name="customer_id" value={customerId} />
+          <input type="hidden" name="new_customer_name" value={showNewCustomer ? newCustomerName : ""} />
+          <input type="hidden" name="new_customer_phone" value={showNewCustomer ? newCustomerPhone : ""} />
 
           <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider">
             {t.selectCustomerForDebt}
@@ -137,6 +142,37 @@ export default function OrderReceiptClient({ order, customers, merchantName, sho
               <button type="button" onClick={() => setCustomerId("")} className="text-zinc-400 hover:text-zinc-600">
                 <span className="material-symbols-outlined">close</span>
               </button>
+            </div>
+          ) : showNewCustomer ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold text-zinc-500">{t.newCustomerName}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewCustomer(false);
+                    setNewCustomerName("");
+                    setNewCustomerPhone("");
+                  }}
+                  className="text-zinc-400 hover:text-zinc-600 text-xs font-bold"
+                >
+                  {t.cancel}
+                </button>
+              </div>
+              <input
+                value={newCustomerName}
+                onChange={(e) => setNewCustomerName(e.target.value)}
+                placeholder={t.customerNamePlaceholder}
+                autoFocus
+                className="w-full h-12 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
+              />
+              <input
+                value={newCustomerPhone}
+                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                placeholder={t.customerPhoneOptional}
+                type="tel"
+                className="w-full h-12 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
+              />
             </div>
           ) : (
             <>
@@ -167,6 +203,22 @@ export default function OrderReceiptClient({ order, customers, merchantName, sho
                   </button>
                 ))}
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNewCustomer(true);
+                  setNewCustomerName(customerSearch);
+                }}
+                className="w-full flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-zinc-300 hover:bg-zinc-50 text-left"
+              >
+                <div className="h-9 w-9 rounded-lg bg-[#a3e635]/20 text-[#365314] flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-lg">person_add</span>
+                </div>
+                <p className="font-bold text-[#18181b] text-sm">
+                  {t.addNewCustomer}
+                  {customerSearch && <span className="text-zinc-400 font-medium"> "{customerSearch}"</span>}
+                </p>
+              </button>
             </>
           )}
 
@@ -178,7 +230,7 @@ export default function OrderReceiptClient({ order, customers, merchantName, sho
 
           <button
             type="submit"
-            disabled={pending || !customerId}
+            disabled={pending || (!customerId && !(showNewCustomer && newCustomerName.trim().length > 0))}
             className="w-full py-3.5 bg-[#18181b] hover:bg-[#27272a] text-white rounded-2xl font-bold text-sm active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {pending ? t.saving : t.confirmMarkAsDebt}

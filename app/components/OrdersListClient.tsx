@@ -61,7 +61,8 @@ export default function OrdersListClient({ orders, lang, t }: Props) {
           <p className="text-zinc-600 font-semibold">{search ? `No results for "${search}"` : t.noOrders}</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <>
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {paginated.map((order) => {
             const badge = PAYMENT_BADGE[order.payment_type] ?? PAYMENT_BADGE.cash;
             const date = new Date(order.created_at);
@@ -69,46 +70,46 @@ export default function OrdersListClient({ orders, lang, t }: Props) {
               <Link
                 key={order.id}
                 href={`/${lang}/orders/${order.id}`}
-                className="bg-white p-4 rounded-3xl flex items-center justify-between border border-zinc-200/80 shadow-sm active:scale-[0.98] transition-all"
+                className="bg-white p-3.5 rounded-2xl border border-zinc-200/80 shadow-sm flex flex-col gap-2 min-w-0 active:scale-[0.98] transition-all"
               >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="h-12 w-12 rounded-2xl flex items-center justify-center font-black text-lg bg-zinc-100 text-zinc-500 shrink-0">
+                <div className="flex items-start justify-between gap-1">
+                  <div className="h-10 w-10 rounded-xl flex items-center justify-center font-black text-base bg-zinc-100 text-zinc-500 shrink-0">
                     {(order.customer?.name ?? t.walkIn)[0].toUpperCase()}
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="font-extrabold text-[#18181b] text-base truncate">
-                      {order.customer?.name ?? t.walkIn}
-                    </h3>
-                    <p className="text-zinc-500 text-xs font-medium">
-                      {order.item_count} {order.item_count === 1 ? t.item : t.items} ·{" "}
-                      {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <span className="font-black text-[#18181b] text-sm">
-                    {order.total_amount.toLocaleString()} FCFA
-                  </span>
-                  <span className={`text-[10px] uppercase tracking-tight font-bold px-2 py-0.5 rounded-lg border ${badge.className}`}>
+                  <span className={`text-[9px] uppercase tracking-tight font-bold px-1.5 py-0.5 rounded-md border shrink-0 ${badge.className}`}>
                     {badge.label}
                   </span>
                 </div>
+
+                <div className="min-w-0">
+                  <h3 className="font-extrabold text-[#18181b] text-sm truncate">
+                    {order.customer?.name ?? t.walkIn}
+                  </h3>
+                  <p className="text-zinc-400 text-[11px] font-medium truncate">
+                    {order.item_count} {order.item_count === 1 ? t.item : t.items} · {date.toLocaleDateString()}
+                  </p>
+                </div>
+
+                <span className="font-black text-[#18181b] text-sm mt-1">
+                  {order.total_amount.toLocaleString()} FCFA
+                </span>
               </Link>
             );
           })}
-
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filtered.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={(sz) => {
-              setPageSize(sz);
-              setCurrentPage(1);
-            }}
-          />
         </div>
+
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(sz) => {
+            setPageSize(sz);
+            setCurrentPage(1);
+          }}
+        />
+        </>
       )}
     </div>
   );

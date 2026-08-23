@@ -117,6 +117,8 @@ export const OrderItemSchema = z.object({
 
 export const CreateOrderSchema = z.object({
   customer_id: z.string().uuid().optional().nullable(),
+  new_customer_name: z.string().trim().min(1).optional(),
+  new_customer_phone: z.string().trim().optional(),
   sale_type: z.enum(["sale", "debt"]).default("sale"),
   payment_method: z.enum(["cash", "mtn", "orange"]).optional().nullable(),
   items: z.array(OrderItemSchema).min(1, "Add at least one item to the order"),

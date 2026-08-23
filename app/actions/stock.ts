@@ -437,3 +437,59 @@ export const getStockSalesStats = cache(async () => {
     orangeMonth,
   };
 });
+
+/**
+ * Realized profit from completed sales (margin actually earned, not
+ * potential margin sitting in unsold stock). Uses each item's CURRENT
+ * cost_price against historical sale lines — an approximation, since cost
+ * isn't snapshotted per line item, but the best available signal without a
+ * schema change. This is deliberately a separate metric from stock value:
+ * stock value is capital tied up in what's still on the shelf (falls when
+ * you sell, rises when you restock); profit is money actually made from
+ * selling, and only grows as sales happen.
+ */
+export const getProfitStats = cache(async () => {
+  const session = await requireSession();
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const startOfWeek = new Date(d.setDate(diff));
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+
+  const { data } = await supabase
+    .from("order_items")
+    .select("quantity, unit_price, orders!inner(created_at, merchant_id), stock_items(cost_price)")
+    .eq("orders.merchant_id", session.merchantId)
+    .gte("orders.created_at", startOfMonth);
+
+  type Row = {
+    quantity: number;
+    unit_price: number;
+    orders: { created_at: string } | { created_at: string }[];
+    stock_items: { cost_price: number } | { cost_price: number }[] | null;
+  };
+
+  const rows = (data ?? []) as unknown as Row[];
+
+  const createdAtOf = (r: Row) => (Array.isArray(r.orders) ? r.orders[0]?.created_at : r.orders?.created_at) ?? "";
+  const costPriceOf = (r: Row) => {
+    const si = Array.isArray(r.stock_items) ? r.stock_items[0] : r.stock_items;
+    return si?.cost_price ?? 0;
+  };
+  const profitOf = (r: Row) => r.quantity * (r.unit_price - costPriceOf(r));
+
+  const todayRows = rows.filter((r) => createdAtOf(r) >= startOfToday);
+  const weekRows = rows.filter((r) => createdAtOf(r) >= startOfWeek.toISOString());
+
+  return {
+    profitToday: todayRows.reduce((sum, r) => sum + profitOf(r), 0),
+    profitWeek: weekRows.reduce((sum, r) => sum + profitOf(r), 0),
+    profitMonth: rows.reduce((sum, r) => sum + profitOf(r), 0),
+  };
+});
