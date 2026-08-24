@@ -286,6 +286,7 @@ export async function adjustStockItem(
     mode: formData.get("mode"),
     value: formData.get("value"),
     direction: formData.get("direction") || "add",
+    reason: formData.get("reason") || "recount",
     note: formData.get("note"),
   });
 
@@ -293,7 +294,7 @@ export async function adjustStockItem(
     return { errors: validated.error.flatten().fieldErrors };
   }
 
-  const { stock_item_id, mode, value, direction, note } = validated.data;
+  const { stock_item_id, mode, value, direction, reason, note } = validated.data;
 
   const { data: item } = await supabase
     .from("stock_items")
@@ -318,6 +319,7 @@ export async function adjustStockItem(
     stock_item_id,
     movement_type: "adjustment",
     quantity_change: delta,
+    adjustment_reason: reason,
     note,
   });
 
@@ -464,13 +466,14 @@ export const getProfitStats = cache(async () => {
 
   const { data } = await supabase
     .from("order_items")
-    .select("quantity, unit_price, orders!inner(created_at, merchant_id), stock_items(cost_price)")
+    .select("quantity, unit_price, cost_price_at_sale, orders!inner(created_at, merchant_id), stock_items(cost_price)")
     .eq("orders.merchant_id", session.merchantId)
     .gte("orders.created_at", startOfMonth);
 
   type Row = {
     quantity: number;
     unit_price: number;
+    cost_price_at_sale?: number | null;
     orders: { created_at: string } | { created_at: string }[];
     stock_items: { cost_price: number } | { cost_price: number }[] | null;
   };
@@ -479,6 +482,7 @@ export const getProfitStats = cache(async () => {
 
   const createdAtOf = (r: Row) => (Array.isArray(r.orders) ? r.orders[0]?.created_at : r.orders?.created_at) ?? "";
   const costPriceOf = (r: Row) => {
+    if (r.cost_price_at_sale != null) return Number(r.cost_price_at_sale);
     const si = Array.isArray(r.stock_items) ? r.stock_items[0] : r.stock_items;
     return si?.cost_price ?? 0;
   };

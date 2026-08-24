@@ -196,12 +196,21 @@ export async function createOrder(
       return { message: "Failed to save direct sale." };
     }
 
-    // 4. Record Order Items
+    // 4. Record Order Items with cost_price_at_sale snapshotting
+    const stockItemIds = items.map((i: { stock_item_id: string }) => i.stock_item_id);
+    const { data: stockCosts } = await supabase
+      .from("stock_items")
+      .select("id, cost_price")
+      .in("id", stockItemIds);
+
+    const costMap = new Map((stockCosts ?? []).map((s) => [s.id, s.cost_price]));
+
     const orderItemsPayload = items.map((i: { stock_item_id: string; quantity: number; unit_price: number }) => ({
       order_id: newOrder.id,
       stock_item_id: i.stock_item_id,
       quantity: i.quantity,
       unit_price: i.unit_price,
+      cost_price_at_sale: costMap.get(i.stock_item_id) ?? 0,
     }));
 
     await supabase.from("order_items").insert(orderItemsPayload);
@@ -344,6 +353,10 @@ export type PaymentStatsReport = {
   cashMonth: number;
   mtnMonth: number;
   orangeMonth: number;
+  // Period-over-Period growth trends
+  growthTodayPct: number;
+  growthWeekPct: number;
+  growthMonthPct: number;
 };
 
 export const getPaymentStatsReport = cache(async (): Promise<PaymentStatsReport> => {
@@ -352,45 +365,91 @@ export const getPaymentStatsReport = cache(async (): Promise<PaymentStatsReport>
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
 
+  // Yesterday window
+  const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).toISOString();
+  const endOfYesterday = startOfToday;
+
+  // Start of current week (Monday)
   const d = new Date();
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   const startOfWeek = new Date(d.setDate(diff));
   startOfWeek.setHours(0, 0, 0, 0);
 
+  // Previous week window
+  const startOfLastWeek = new Date(startOfWeek);
+  startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+  const endOfLastWeek = startOfWeek.toISOString();
+
+  // Start of current month
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  // Previous month window
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  const endOfLastMonth = startOfMonth;
 
   const { data: salesTx } = await supabase
     .from("transactions")
     .select("amount, created_at, type, method")
     .eq("merchant_id", session.merchantId)
-    .gte("created_at", startOfMonth);
+    .gte("created_at", startOfLastMonth);
 
   const txList = salesTx ?? [];
 
   const todayTxs = txList.filter(
     (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfToday
   );
+  const yesterdayTxs = txList.filter(
+    (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfYesterday && t.created_at < endOfYesterday
+  );
+
   const weekTxs = txList.filter(
     (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfWeek.toISOString()
   );
-  const monthTxs = txList.filter((t) => t.type === "sale" || t.type === "payment");
+  const lastWeekTxs = txList.filter(
+    (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfLastWeek.toISOString() && t.created_at < endOfLastWeek
+  );
+
+  const monthTxs = txList.filter(
+    (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfMonth
+  );
+  const lastMonthTxs = txList.filter(
+    (t) => (t.type === "sale" || t.type === "payment") && t.created_at >= startOfLastMonth && t.created_at < endOfLastMonth
+  );
+
+  const salesToday = todayTxs.reduce((sum, t) => sum + t.amount, 0);
+  const salesYesterday = yesterdayTxs.reduce((sum, t) => sum + t.amount, 0);
+
+  const salesWeek = weekTxs.reduce((sum, t) => sum + t.amount, 0);
+  const salesLastWeek = lastWeekTxs.reduce((sum, t) => sum + t.amount, 0);
+
+  const salesMonth = monthTxs.reduce((sum, t) => sum + t.amount, 0);
+  const salesLastMonth = lastMonthTxs.reduce((sum, t) => sum + t.amount, 0);
+
+  const calcGrowth = (curr: number, prev: number) => {
+    if (prev <= 0) return curr > 0 ? 100 : 0;
+    return Math.round(((curr - prev) / prev) * 100);
+  };
 
   return {
-    salesToday: todayTxs.reduce((sum, t) => sum + t.amount, 0),
+    salesToday,
     cashToday: todayTxs.filter((t) => !t.method || t.method === "cash").reduce((sum, t) => sum + t.amount, 0),
     mtnToday: todayTxs.filter((t) => t.method === "mtn").reduce((sum, t) => sum + t.amount, 0),
     orangeToday: todayTxs.filter((t) => t.method === "orange").reduce((sum, t) => sum + t.amount, 0),
 
-    salesWeek: weekTxs.reduce((sum, t) => sum + t.amount, 0),
+    salesWeek,
     cashWeek: weekTxs.filter((t) => !t.method || t.method === "cash").reduce((sum, t) => sum + t.amount, 0),
     mtnWeek: weekTxs.filter((t) => t.method === "mtn").reduce((sum, t) => sum + t.amount, 0),
     orangeWeek: weekTxs.filter((t) => t.method === "orange").reduce((sum, t) => sum + t.amount, 0),
 
-    salesMonth: monthTxs.reduce((sum, t) => sum + t.amount, 0),
+    salesMonth,
     cashMonth: monthTxs.filter((t) => !t.method || t.method === "cash").reduce((sum, t) => sum + t.amount, 0),
     mtnMonth: monthTxs.filter((t) => t.method === "mtn").reduce((sum, t) => sum + t.amount, 0),
     orangeMonth: monthTxs.filter((t) => t.method === "orange").reduce((sum, t) => sum + t.amount, 0),
+
+    growthTodayPct: calcGrowth(salesToday, salesYesterday),
+    growthWeekPct: calcGrowth(salesWeek, salesLastWeek),
+    growthMonthPct: calcGrowth(salesMonth, salesLastMonth),
   };
 });
 
@@ -558,3 +617,167 @@ export async function setOrderAsDebt(
   revalidatePath(`/${lang}/dashboard`);
   redirect(`/${lang}/orders/${orderId}`);
 }
+
+// ─── Shift Register & EOD Closing Actions ─────────────────────────────────────
+
+export type DailyRegisterStatus = {
+  isClosed: boolean;
+  registerDate: string;
+  expectedCash: number;
+  expectedMtn: number;
+  expectedOrange: number;
+  actualCash?: number;
+  actualMtn?: number;
+  actualOrange?: number;
+  discrepancy?: number;
+  mtnDiscrepancy?: number;
+  orangeDiscrepancy?: number;
+  notes?: string;
+  closedAt?: string;
+};
+
+export const getTodayRegisterStatus = cache(async (): Promise<DailyRegisterStatus> => {
+  const session = await requireSession();
+  const todayDate = new Date().toISOString().slice(0, 10);
+
+  // Check if register is closed for today
+  const { data: closedRegister } = await supabase
+    .from("daily_registers")
+    .select("*")
+    .eq("merchant_id", session.merchantId)
+    .eq("register_date", todayDate)
+    .single();
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+  // Get transactions for today grouped by payment method
+  const { data: txs } = await supabase
+    .from("transactions")
+    .select("amount, method")
+    .eq("merchant_id", session.merchantId)
+    .gte("created_at", startOfToday)
+    .in("type", ["sale", "payment"]);
+
+  const todayList = txs ?? [];
+
+  const totalCashToday = todayList
+    .filter((t) => !t.method || t.method === "cash")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const totalMtnToday = todayList
+    .filter((t) => t.method === "mtn")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const totalOrangeToday = todayList
+    .filter((t) => t.method === "orange")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  if (closedRegister) {
+    return {
+      isClosed: true,
+      registerDate: todayDate,
+      expectedCash: Number(closedRegister.expected_cash ?? totalCashToday),
+      expectedMtn: Number(closedRegister.expected_mtn ?? totalMtnToday),
+      expectedOrange: Number(closedRegister.expected_orange ?? totalOrangeToday),
+      actualCash: Number(closedRegister.actual_cash ?? 0),
+      actualMtn: Number(closedRegister.actual_mtn ?? 0),
+      actualOrange: Number(closedRegister.actual_orange ?? 0),
+      discrepancy: Number(closedRegister.discrepancy ?? 0),
+      mtnDiscrepancy: Number(closedRegister.mtn_discrepancy ?? 0),
+      orangeDiscrepancy: Number(closedRegister.orange_discrepancy ?? 0),
+      notes: closedRegister.notes ?? undefined,
+      closedAt: closedRegister.closed_at,
+    };
+  }
+
+  return {
+    isClosed: false,
+    registerDate: todayDate,
+    expectedCash: totalCashToday,
+    expectedMtn: totalMtnToday,
+    expectedOrange: totalOrangeToday,
+  };
+});
+
+export async function closeDailyRegister(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await requireSession();
+  const todayDate = new Date().toISOString().slice(0, 10);
+
+  const rawOpening = formData.get("opening_cash") || 0;
+  const rawActualCash = formData.get("actual_cash") || 0;
+  const rawActualMtn = formData.get("actual_mtn") || 0;
+  const rawActualOrange = formData.get("actual_orange") || 0;
+  const notes = String(formData.get("notes") ?? "").trim();
+
+  const openingCash = Number(rawOpening);
+  const actualCash = Number(rawActualCash);
+  const actualMtn = Number(rawActualMtn);
+  const actualOrange = Number(rawActualOrange);
+
+  if (isNaN(actualCash) || actualCash < 0) {
+    return { message: "Please enter a valid actual cash amount." };
+  }
+
+  // Get today's expected sales by method
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
+  const { data: txs } = await supabase
+    .from("transactions")
+    .select("amount, method")
+    .eq("merchant_id", session.merchantId)
+    .gte("created_at", startOfToday)
+    .in("type", ["sale", "payment"]);
+
+  const todayList = txs ?? [];
+
+  const cashSalesToday = todayList
+    .filter((t) => !t.method || t.method === "cash")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const expectedMtn = todayList
+    .filter((t) => t.method === "mtn")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const expectedOrange = todayList
+    .filter((t) => t.method === "orange")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const expectedCash = openingCash + cashSalesToday;
+  const discrepancy = actualCash - expectedCash;
+  const mtnDiscrepancy = actualMtn - expectedMtn;
+  const orangeDiscrepancy = actualOrange - expectedOrange;
+
+  const { error } = await supabase.from("daily_registers").upsert(
+    {
+      merchant_id: session.merchantId,
+      register_date: todayDate,
+      opening_cash: openingCash,
+      expected_cash: expectedCash,
+      actual_cash: actualCash,
+      discrepancy,
+      expected_mtn: expectedMtn,
+      actual_mtn: actualMtn,
+      mtn_discrepancy: mtnDiscrepancy,
+      expected_orange: expectedOrange,
+      actual_orange: actualOrange,
+      orange_discrepancy: orangeDiscrepancy,
+      notes: notes || null,
+      closed_at: new Date().toISOString(),
+    },
+    { onConflict: "merchant_id,register_date" }
+  );
+
+  if (error) {
+    return { message: "Failed to close register for today." };
+  }
+
+  const lang = await getLocaleFromCookie();
+  revalidatePath(`/${lang}/transactions`);
+  return { message: "Shift register closed successfully!" };
+}
+

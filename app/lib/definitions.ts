@@ -100,12 +100,26 @@ export const AdjustStockSchema = z.object({
   mode: z.enum(["set", "delta"]),
   value: z.coerce.number().min(0, "Enter a valid quantity"),
   direction: z.enum(["add", "remove"]).default("add"),
+  reason: z
+    .enum(["recount", "typo", "spoilage", "expiry", "damage", "theft", "personal_use"])
+    .default("recount"),
   note: z
     .string()
     .trim()
     .min(3, "Please explain the reason for this adjustment")
     .max(280, "Keep the reason under 280 characters"),
 });
+
+// ─── Register Close ─────────────────────────────────────────────────────────
+
+export const CloseRegisterSchema = z.object({
+  opening_cash: z.coerce.number().min(0, "Opening cash can't be negative").default(0),
+  actual_cash: z.coerce.number().min(0, "Actual cash can't be negative"),
+  actual_mtn: z.coerce.number().min(0, "Actual MTN cash can't be negative").default(0),
+  actual_orange: z.coerce.number().min(0, "Actual Orange cash can't be negative").default(0),
+  notes: z.string().trim().optional(),
+});
+
 
 // ─── Orders ──────────────────────────────────────────────────────────────────
 

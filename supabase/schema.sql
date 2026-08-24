@@ -104,3 +104,63 @@ create policy "admin_users: service role only" on admin_users for all using (fal
 create policy "system_logs: service role only" on system_logs for all using (false);
 create policy "system_config: service role only" on system_config for all using (false);
 
+-- ─── ADVANCED INVENTORY & REPORTING EXTENSIONS ───────────────────────────────
+
+-- 1. Historical Cost Price Snapshotting on Order Items
+alter table order_items add column if not exists cost_price_at_sale numeric(12, 2);
+
+-- 2. Adjustment Reasons for Stock Movements
+alter table stock_movements add column if not exists adjustment_reason text 
+  check (adjustment_reason in ('recount', 'typo', 'spoilage', 'expiry', 'damage', 'theft', 'personal_use'));
+
+-- 3. Daily Register Closing / EOD Shift Reconciliation
+create table if not exists daily_registers (
+  id                 uuid primary key default gen_random_uuid(),
+  merchant_id        uuid not null references merchants(id) on delete cascade,
+  register_date      date not null,
+  opening_cash       numeric(12, 2) not null default 0,
+  expected_cash      numeric(12, 2) not null default 0,
+  actual_cash        numeric(12, 2) not null default 0,
+  discrepancy        numeric(12, 2) not null default 0,
+  expected_mtn       numeric(12, 2) not null default 0,
+  actual_mtn         numeric(12, 2) not null default 0,
+  mtn_discrepancy    numeric(12, 2) not null default 0,
+  expected_orange    numeric(12, 2) not null default 0,
+  actual_orange      numeric(12, 2) not null default 0,
+  orange_discrepancy numeric(12, 2) not null default 0,
+  notes              text,
+  closed_at          timestamptz not null default now(),
+  created_at         timestamptz not null default now(),
+  unique(merchant_id, register_date)
+);
+
+-- 4. Daily Sales Aggregates Table
+create table if not exists daily_sales_aggregates (
+  id               uuid primary key default gen_random_uuid(),
+  merchant_id      uuid not null references merchants(id) on delete cascade,
+  summary_date     date not null,
+  total_orders     integer not null default 0,
+  gross_revenue    numeric(12, 2) not null default 0,
+  cogs             numeric(12, 2) not null default 0,
+  net_profit       numeric(12, 2) not null default 0,
+  cash_revenue     numeric(12, 2) not null default 0,
+  mtn_revenue      numeric(12, 2) not null default 0,
+  orange_revenue   numeric(12, 2) not null default 0,
+  debt_revenue     numeric(12, 2) not null default 0,
+  items_sold_count integer not null default 0,
+  created_at       timestamptz not null default now(),
+  unique(merchant_id, summary_date)
+);
+
+-- Indexes for performance
+create index if not exists daily_registers_merchant_date_idx on daily_registers(merchant_id, register_date desc);
+create index if not exists daily_sales_aggregates_merchant_date_idx on daily_sales_aggregates(merchant_id, summary_date desc);
+
+-- RLS Security Policies
+alter table daily_registers enable row level security;
+alter table daily_sales_aggregates enable row level security;
+
+create policy "daily_registers: service role only" on daily_registers for all using (false);
+create policy "daily_sales_aggregates: service role only" on daily_sales_aggregates for all using (false);
+
+

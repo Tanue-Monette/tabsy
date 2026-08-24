@@ -157,6 +157,26 @@ export default function AdjustStockForm({ item, t }: Props) {
           </div>
 
           <div>
+            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2" htmlFor="reason">
+              Adjustment Category
+            </label>
+            <select
+              id="reason"
+              name="reason"
+              defaultValue="recount"
+              className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] font-extrabold cursor-pointer mb-4"
+            >
+              <option value="recount">Inventory Recount</option>
+              <option value="typo">Typo / Entry Correction</option>
+              <option value="spoilage">Spoilage / Waste</option>
+              <option value="expiry">Expired Product</option>
+              <option value="damage">Damaged / Broken</option>
+              <option value="theft">Stolen / Missing</option>
+              <option value="personal_use">Personal / Shop Use</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2" htmlFor="note">
               {t.reasonLabel}
             </label>
