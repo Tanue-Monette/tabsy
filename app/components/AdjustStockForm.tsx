@@ -203,8 +203,8 @@ export default function AdjustStockForm({ item, t }: Props) {
       <footer className="p-6 bg-white border-t border-zinc-100">
         <button
           type="submit"
-          disabled={pending || isInvalid || note.trim().length < 3}
-          className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-base shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={pending || isInvalid || isNoOp || note.trim().length < 3}
+          className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-black text-base shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
           <span className="material-symbols-outlined">edit_note</span>
           {pending ? t.saving : t.confirmAdjustment}

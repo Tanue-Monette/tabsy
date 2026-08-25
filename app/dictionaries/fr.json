@@ -227,7 +227,36 @@
     "todaySalesBreakdown": "Répartition des recettes du jour",
     "cashShort": "Espèces",
     "mtnShort": "MTN MoMo",
-    "orangeShort": "Orange"
+    "orangeShort": "Orange",
+    "history": "Historique des mouvements",
+    "restockLogs": "Registre de réapprovisionnement"
+  },
+  "stockHistory": {
+    "title": "Rapport des Réapprovisionnements",
+    "subtitle": "Journal d'audit de tous les réapprovisionnements, ventes et ajustements",
+    "searchPlaceholder": "Rechercher par article ou note...",
+    "totalInvestment": "Total Investi en Stock",
+    "unitsRestocked": "Total Unités Reçues",
+    "adjustmentsLogged": "Ajustements Enregistrés",
+    "allMovements": "Tous les mouvements",
+    "restocksOnly": "Réapprovisionnements",
+    "adjustmentsOnly": "Ajustements",
+    "salesOnly": "Ventes",
+    "unitCost": "Coût unitaire",
+    "totalValue": "Valeur totale",
+    "reason": "Raison",
+    "note": "Note",
+    "noMovements": "Aucun mouvement de stock enregistré.",
+    "movementsAppear": "Les réapprovisionnements, ventes et ajustements apparaîtront automatiquement ici.",
+    "exportPdf": "Exporter en PDF",
+    "print": "Imprimer",
+    "recount": "Recomptage",
+    "typo": "Erreur de saisie",
+    "spoilage": "Avarié / Gâté",
+    "expiry": "Périmé",
+    "damage": "Endommagé",
+    "theft": "Vol / Perte",
+    "personal_use": "Usage personnel"
   },
   "order": {
     "title": "Nouvelle vente POS",
@@ -253,7 +282,12 @@
     "registering": "Enregistrement…",
     "infoOrder": "Cela déduira le stock et enregistrera une vente terminée immédiatement.",
     "insufficientStock": "Stock insuffisant",
-    "outOfStockBadge": "Rupture de stock"
+    "outOfStockBadge": "Rupture de stock",
+    "selectUnitOrPack": "Sélectionner l'unité ou l'emballage",
+    "sellByUnit": "À l'unité",
+    "sellByPack": "Emballage ({name})",
+    "packDetails": "{size} unités de base",
+    "perPack": "par emballage"
   },
   "inventoryReport": {
     "title": "Registre des ventes de stock",

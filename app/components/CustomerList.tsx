@@ -167,6 +167,7 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
               <Link
                 key={c.id}
                 href={`/${lang}/customers/${c.id}`}
+                prefetch={true}
                 className="bg-white p-3.5 rounded-2xl border border-zinc-200/80 shadow-sm flex flex-col gap-2 min-w-0 active:scale-[0.98] transition-all hover:border-zinc-300"
               >
                 <div className="flex items-start justify-between gap-1">

@@ -227,7 +227,36 @@
     "todaySalesBreakdown": "Today's Revenue Breakdown",
     "cashShort": "Cash",
     "mtnShort": "MTN MoMo",
-    "orangeShort": "Orange"
+    "orangeShort": "Orange",
+    "history": "Movement History",
+    "restockLogs": "Restock & Adjustment Logs"
+  },
+  "stockHistory": {
+    "title": "Restock & Movement Report",
+    "subtitle": "Audit trail of all inventory restocks, sales, and corrections",
+    "searchPlaceholder": "Search item name or notes...",
+    "totalInvestment": "Total Restock Investment",
+    "unitsRestocked": "Total Restock Units",
+    "adjustmentsLogged": "Adjustments Logged",
+    "allMovements": "All Movements",
+    "restocksOnly": "Restocks",
+    "adjustmentsOnly": "Adjustments",
+    "salesOnly": "Sales",
+    "unitCost": "Unit Cost",
+    "totalValue": "Total Cost Value",
+    "reason": "Reason",
+    "note": "Note",
+    "noMovements": "No stock movements recorded yet.",
+    "movementsAppear": "Stock restocks, sales, and adjustments will automatically appear here.",
+    "exportPdf": "Export PDF",
+    "print": "Print",
+    "recount": "Recount",
+    "typo": "Typo / Saisie",
+    "spoilage": "Spoilage",
+    "expiry": "Expired",
+    "damage": "Damaged",
+    "theft": "Theft / Loss",
+    "personal_use": "Personal Use"
   },
   "order": {
     "title": "New POS Order",
@@ -253,7 +282,12 @@
     "registering": "Registering…",
     "infoOrder": "This will deduct stock and record a completed sale immediately.",
     "insufficientStock": "Not enough stock",
-    "outOfStockBadge": "Out of stock"
+    "outOfStockBadge": "Out of stock",
+    "selectUnitOrPack": "Select Selling Unit / Pack",
+    "sellByUnit": "Single Unit",
+    "sellByPack": "Pack ({name})",
+    "packDetails": "{size} base units",
+    "perPack": "per pack"
   },
   "inventoryReport": {
     "title": "Inventory Sales Ledger",

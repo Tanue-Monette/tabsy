@@ -46,13 +46,22 @@ export default async function StockPage({
               <h1 className="text-xl font-bold text-white leading-tight">{t.stock.inventoryAndSales}</h1>
             </div>
           </div>
-          <Link
-            href={`/${lang}/new-order`}
-            className="flex items-center gap-1.5 bg-[#a3e635] text-[#121212] font-black text-xs px-3.5 py-2 rounded-xl active:scale-95 transition-all shadow-md shadow-[#a3e635]/20 cursor-pointer hover:bg-[#b4f346]"
-          >
-            <span className="material-symbols-outlined text-sm font-bold">point_of_sale</span>
-            {t.order.newOrder}
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/${lang}/stock/history`}
+              className="flex items-center gap-1.5 bg-zinc-800/80 hover:bg-zinc-800 text-white font-bold text-xs px-3.5 py-2 rounded-xl active:scale-95 transition-all border border-zinc-700/40"
+            >
+              <span className="material-symbols-outlined text-sm text-[#a3e635]">history</span>
+              {t.stock.history ?? "History"}
+            </Link>
+            <Link
+              href={`/${lang}/new-order`}
+              className="flex items-center gap-1.5 bg-[#a3e635] text-[#121212] font-black text-xs px-3.5 py-2 rounded-xl active:scale-95 transition-all shadow-md shadow-[#a3e635]/20 cursor-pointer hover:bg-[#b4f346]"
+            >
+              <span className="material-symbols-outlined text-sm font-bold">point_of_sale</span>
+              {t.order.newOrder}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -182,10 +191,12 @@ export default async function StockPage({
           </div>
         </section>
 
-        {/* Stock Capital (cost basis) vs Profit — kept separate deliberately */}
+        {/* Stock Capital (cost basis) vs Sales Month vs Profit */}
         <StockValueCards
           capitalLabel={t.stock.totalStockAssetValue}
           capitalValue={stockCapitalValue}
+          salesMonthLabel={t.inventoryReport.thisMonth}
+          salesMonthValue={salesStats.salesMonth}
           profitLabel={t.stock.profitThisMonth}
           profitValue={profitStats.profitMonth}
         />

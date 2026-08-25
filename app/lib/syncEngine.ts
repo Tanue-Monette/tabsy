@@ -134,6 +134,25 @@ export async function queueOfflineTransaction(
     });
   }
 
+  // Deduct stock levels in local Dexie IndexedDB immediately so UI updates stock counts offline!
+  if (payload.items && payload.items.length > 0) {
+    try {
+      for (const item of payload.items) {
+        const cachedItem = await db.cachedStockItems.get(item.stock_item_id);
+        if (cachedItem) {
+          const newQty = Math.max(0, cachedItem.quantity - item.quantity);
+          await db.cachedStockItems.put({
+            ...cachedItem,
+            quantity: newQty,
+            updatedAt: Date.now(),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update local Dexie stock:", err);
+    }
+  }
+
   notifyListeners();
   triggerSync();
   return queueId as number;

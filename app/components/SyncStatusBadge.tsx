@@ -2,82 +2,97 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/app/lib/db";
-import { initSyncEngine, subscribeSyncStatus, triggerSync } from "@/app/lib/syncEngine";
+import { subscribeSyncStatus, triggerSync } from "@/app/lib/syncEngine";
 
 export default function SyncStatusBadge() {
-  const [isOnline, setIsOnline] = useState(true);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [syncedRecently, setSyncedRecently] = useState(false);
+  const [isOnline, setIsOnline] = useState<boolean>(true);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [failedCount, setFailedCount] = useState<number>(0);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   useEffect(() => {
-    initSyncEngine();
+    if (typeof window === "undefined") return;
 
-    const updateStatus = async () => {
-      setIsOnline(navigator.onLine);
+    setIsOnline(navigator.onLine);
+
+    const updateOnline = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", updateOnline);
+    window.addEventListener("offline", updateOnline);
+
+    const loadCounts = async () => {
       try {
-        const count = await db.offlineSyncQueue.where("status").equals("pending").count();
-        setPendingCount(count);
-        if (count === 0 && pendingCount > 0) {
-          setSyncedRecently(true);
-          setTimeout(() => setSyncedRecently(false), 3000);
-        }
+        const pending = await db.offlineSyncQueue.where("status").equals("pending").count();
+        const failed = await db.offlineSyncQueue.where("status").equals("failed").count();
+        setPendingCount(pending);
+        setFailedCount(failed);
       } catch (err) {
-        console.error("Error reading Dexie queue count:", err);
+        console.error("Dexie queue count error:", err);
       }
     };
 
-    updateStatus();
-
-    const handleOnline = () => {
-      setIsOnline(true);
-      triggerSync();
-      updateStatus();
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-      updateStatus();
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    const unsubscribe = subscribeSyncStatus(updateStatus);
+    loadCounts();
+    const unsubscribe = subscribeSyncStatus(loadCounts);
 
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", updateOnline);
+      window.removeEventListener("offline", updateOnline);
       unsubscribe();
     };
   }, []);
 
-  if (isOnline && pendingCount === 0 && !syncedRecently) return null;
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    try {
+      await db.offlineSyncQueue.where("status").equals("failed").modify({ status: "pending" });
+      await triggerSync();
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
+  // Completely hidden when online with no pending or failed items
+  if (isOnline && pendingCount === 0 && failedCount === 0) {
+    return null;
+  }
+
+  // Full-width sticky banner displayed directly below the header
   return (
-    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom duration-300">
-      {!isOnline && (
-        <div className="bg-[#18181b] text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 border border-zinc-700">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-          <span className="material-symbols-outlined text-sm text-amber-400">wifi_off</span>
-          <span>
-            {pendingCount > 0
-              ? `Offline — ${pendingCount} change${pendingCount > 1 ? "s" : ""} queued`
-              : "Offline Mode"}
-          </span>
+    <div className="sticky top-0 z-[60] w-full transition-all">
+      {!isOnline ? (
+        <div className="bg-amber-500 text-white font-bold text-xs py-2 px-6 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+            <span>
+              Offline Mode — {pendingCount + failedCount} transaction{pendingCount + failedCount === 1 ? "" : "s"} saved locally
+            </span>
+          </div>
+          <span className="text-[10px] uppercase font-black tracking-wider opacity-80">Auto-sync when back online</span>
         </div>
-      )}
-
-      {isOnline && pendingCount > 0 && (
-        <div className="bg-[#18181b] text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 border border-zinc-700">
-          <span className="w-2 h-2 rounded-full bg-[#a3e635] animate-pulse" />
-          <span className="material-symbols-outlined text-sm animate-spin text-[#a3e635]">sync</span>
-          <span>Syncing {pendingCount} item{pendingCount > 1 ? "s" : ""} to database...</span>
+      ) : failedCount > 0 ? (
+        <div className="bg-rose-600 text-white font-bold text-xs py-2 px-6 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">sync_problem</span>
+            <span>
+              {failedCount} sync error{failedCount === 1 ? "" : "s"} detected
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleForceSync}
+            disabled={isSyncing}
+            className="bg-white text-rose-700 px-3 py-1 rounded-lg text-xs font-black hover:bg-rose-50 active:scale-95 transition-all cursor-pointer shadow-sm"
+          >
+            {isSyncing ? "Syncing..." : "Retry Sync Now"}
+          </button>
         </div>
-      )}
-
-      {isOnline && pendingCount === 0 && syncedRecently && (
-        <div className="bg-[#18181b] text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 border border-zinc-700">
-          <span className="material-symbols-outlined text-sm text-[#a3e635]">check_circle</span>
-          <span>All offline changes saved!</span>
+      ) : (
+        <div className="bg-blue-600 text-white font-bold text-xs py-2 px-6 flex items-center justify-between shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+            <span>
+              Syncing {pendingCount} offline transaction{pendingCount === 1 ? "" : "s"} to database...
+            </span>
+          </div>
         </div>
       )}
     </div>

@@ -3,10 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import BottomNav from "@/app/components/BottomNav";
 import LanguageSwitcher from "@/app/components/LanguageSwitcher";
 import AmountBanner from "@/app/components/AmountBanner";
+import StockValueCards from "@/app/components/StockValueCards";
 import { getSession } from "@/app/lib/session";
 import { getMerchant } from "@/app/actions/merchant";
 import { getDashboardStats } from "@/app/actions/transactions";
-import { getStockItems } from "@/app/actions/stock";
+import { getStockItems, getProfitStats } from "@/app/actions/stock";
 import { getDictionary, isValidLocale, type Locale } from "@/app/lib/i18n";
 
 export default async function DashboardPage({
@@ -21,14 +22,16 @@ export default async function DashboardPage({
   const session = await getSession();
   if (!session) redirect(`/${lang}`);
 
-  const [merchant, stats, stockItems] = await Promise.all([
+  const [merchant, stats, stockItems, profitStats] = await Promise.all([
     getMerchant(),
     getDashboardStats(session.merchantId),
     getStockItems(),
+    getProfitStats(),
   ]);
 
   const firstName = merchant?.merchant_name?.split(" ")[0] ?? "Merchant";
   const lowStockCount = stockItems.filter((i) => i.quantity <= i.low_stock_threshold).length;
+  const stockCapitalValue = stockItems.reduce((sum, i) => sum + i.quantity * i.cost_price, 0);
 
   return (
     <div className="bg-[#f8f9fa] min-h-screen pb-32">
@@ -57,6 +60,15 @@ export default async function DashboardPage({
       </header>
 
       <main className="px-6 space-y-6 pt-6 relative z-10">
+        {/* Financial Overview (Stock Asset Value, Sales Month, Profit Month) */}
+        <StockValueCards
+          capitalLabel={t.stock.totalStockAssetValue}
+          capitalValue={stockCapitalValue}
+          salesMonthLabel={t.inventoryReport.thisMonth}
+          salesMonthValue={stats.salesMonth}
+          profitLabel={t.stock.profitThisMonth}
+          profitValue={profitStats.profitMonth}
+        />
         {/* Quick Action Buttons */}
         <div className="grid grid-cols-2 gap-4">
           <Link

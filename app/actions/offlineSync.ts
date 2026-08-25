@@ -143,34 +143,109 @@ export async function processOfflineQueueItem(
 
       revalidatePath(`/customers/${payload.customer_id}`);
     } else if (type === "order") {
-      if (!payload.customer_id) {
-        return { success: false, message: "Missing customer_id." };
-      }
       if (!payload.items || payload.items.length === 0) {
         return { success: false, message: "Order has no items." };
       }
 
-      const { data: orderId, error: orderError } = await supabase.rpc("create_order_as_debt", {
-        p_merchant_id: session.merchantId,
-        p_customer_id: payload.customer_id,
-        p_items: payload.items.map((i) => ({
+      if (payload.customer_id) {
+        // Debt sale flow
+        const { data: orderId, error: orderError } = await supabase.rpc("create_order_as_debt", {
+          p_merchant_id: session.merchantId,
+          p_customer_id: payload.customer_id,
+          p_items: payload.items.map((i) => ({
+            stock_item_id: i.stock_item_id,
+            quantity: i.quantity,
+            unit_price: i.unit_price,
+          })),
+        });
+
+        if (orderError || !orderId) {
+          return {
+            success: false,
+            message: orderError?.message?.includes("Insufficient stock")
+              ? "Not enough stock for one or more items."
+              : "Failed to register debt order during sync.",
+          };
+        }
+        revalidatePath(`/customers/${payload.customer_id}`);
+      } else {
+        // Direct cash/MoMo sale flow
+        const orderTotal = payload.amount;
+        const paymentMethod = payload.method ?? "cash";
+
+        // Deduct stock relative delta
+        for (const item of payload.items) {
+          const { data: currentStock } = await supabase
+            .from("stock_items")
+            .select("quantity")
+            .eq("id", item.stock_item_id)
+            .eq("merchant_id", session.merchantId)
+            .single();
+
+          if (currentStock) {
+            await supabase
+              .from("stock_items")
+              .update({ quantity: Math.max(0, currentStock.quantity - item.quantity) })
+              .eq("id", item.stock_item_id);
+          }
+        }
+
+        // Insert order record
+        const { data: newOrder, error: orderErr } = await supabase
+          .from("orders")
+          .insert({
+            merchant_id: session.merchantId,
+            customer_id: null,
+            total_amount: orderTotal,
+            payment_type: paymentMethod,
+          })
+          .select("id")
+          .single();
+
+        if (orderErr || !newOrder) {
+          return { success: false, message: "Failed to save offline direct sale." };
+        }
+
+        // Insert order items
+        const stockItemIds = payload.items.map((i) => i.stock_item_id);
+        const { data: stockCosts } = await supabase
+          .from("stock_items")
+          .select("id, cost_price")
+          .in("id", stockItemIds);
+
+        const costMap = new Map((stockCosts ?? []).map((s) => [s.id, s.cost_price]));
+
+        const orderItemsPayload = payload.items.map((i) => ({
+          order_id: newOrder.id,
           stock_item_id: i.stock_item_id,
           quantity: i.quantity,
           unit_price: i.unit_price,
-        })),
-      });
+          cost_price_at_sale: costMap.get(i.stock_item_id) ?? 0,
+        }));
 
-      if (orderError || !orderId) {
-        return {
-          success: false,
-          message: orderError?.message?.includes("Insufficient stock")
-            ? "Not enough stock for one or more items."
-            : "Failed to register order during sync.",
-        };
+        await supabase.from("order_items").insert(orderItemsPayload);
+
+        // Insert transaction record
+        const { data: newTx } = await supabase
+          .from("transactions")
+          .insert({
+            merchant_id: session.merchantId,
+            customer_id: null,
+            type: "sale",
+            amount: orderTotal,
+            description: `Direct Sale (#${newOrder.id.slice(0, 8)}) [Offline Sync]`,
+            method: paymentMethod,
+          })
+          .select("id")
+          .single();
+
+        if (newTx) {
+          await supabase.from("orders").update({ transaction_id: newTx.id }).eq("id", newOrder.id);
+        }
       }
 
-      revalidatePath(`/customers/${payload.customer_id}`);
       revalidatePath("/stock");
+      revalidatePath("/transactions");
     }
 
     revalidatePath("/customers");

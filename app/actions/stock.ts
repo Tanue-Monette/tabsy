@@ -497,3 +497,49 @@ export const getProfitStats = cache(async () => {
     profitMonth: rows.reduce((sum, r) => sum + profitOf(r), 0),
   };
 });
+
+export const getStockMovements = cache(async () => {
+  const session = await requireSession();
+
+  const { data, error } = await supabase
+    .from("stock_movements")
+    .select("id, stock_item_id, movement_type, quantity_change, unit_cost, adjustment_reason, note, created_at, stock_items(name, unit)")
+    .eq("merchant_id", session.merchantId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching stock movements:", error);
+    return [];
+  }
+
+  type MovementRow = {
+    id: string;
+    stock_item_id: string;
+    movement_type: "restock" | "adjustment" | "sale";
+    quantity_change: number;
+    unit_cost: number | null;
+    adjustment_reason: string | null;
+    note: string | null;
+    created_at: string;
+    stock_items: { name: string; unit: string } | { name: string; unit: string }[] | null;
+  };
+
+  const raw = (data ?? []) as unknown as MovementRow[];
+
+  return raw.map((m) => {
+    const item = Array.isArray(m.stock_items) ? m.stock_items[0] : m.stock_items;
+    return {
+      id: m.id,
+      stock_item_id: m.stock_item_id,
+      movement_type: m.movement_type,
+      quantity_change: Number(m.quantity_change ?? 0),
+      unit_cost: m.unit_cost != null ? Number(m.unit_cost) : null,
+      adjustment_reason: m.adjustment_reason,
+      note: m.note,
+      created_at: m.created_at,
+      item_name: item?.name ?? "Unknown Item",
+      item_unit: item?.unit ?? "pcs",
+    };
+  });
+});
+

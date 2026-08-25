@@ -4,7 +4,15 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// Server-side admin client — bypasses RLS for trusted server actions
+// Server-side admin client — bypasses RLS for trusted server actions with keep-alive HTTP connections
 export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: { persistSession: false },
+  global: {
+    fetch: (url, options) => {
+      return fetch(url, {
+        ...options,
+        keepalive: true,
+      });
+    },
+  },
 });

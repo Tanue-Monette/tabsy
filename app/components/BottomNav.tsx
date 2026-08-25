@@ -25,6 +25,7 @@ export default function BottomNav({ lang, t }: Props) {
           <Link
             key={item.href}
             href={item.href}
+            prefetch={true}
             className={`flex flex-col items-center justify-center px-3 py-2 transition-all duration-200 active:scale-95 rounded-2xl cursor-pointer ${
               isActive
                 ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10 font-bold hover:bg-zinc-900"

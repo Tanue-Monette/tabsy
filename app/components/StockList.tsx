@@ -165,7 +165,7 @@ export default function StockList({
                   </span>
                 </div>
 
-                <Link href={`/${lang}/stock/${item.id}/edit`} className="min-w-0">
+                <Link href={`/${lang}/stock/${item.id}/edit`} prefetch={true} className="min-w-0">
                   <h3 className="font-extrabold text-[#18181b] text-sm truncate">{item.name}</h3>
                   <p className="text-zinc-500 text-[11px] font-medium truncate">
                     {item.quantity.toLocaleString()} {item.unit} · {item.sell_price.toLocaleString()} FCFA
@@ -175,6 +175,7 @@ export default function StockList({
 
                 <Link
                   href={`/${lang}/stock/${item.id}/restock`}
+                  prefetch={true}
                   className="mt-1 w-full flex items-center justify-center gap-1 bg-[#18181b] text-[#a3e635] rounded-xl py-2 text-[11px] font-bold active:scale-95 transition-transform"
                 >
                   <span className="material-symbols-outlined text-sm">add</span>

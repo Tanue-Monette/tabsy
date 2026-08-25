@@ -6,25 +6,47 @@ import type { Dictionary } from "@/app/lib/i18n";
 type PackRow = { name: string; size: string };
 
 type Props = {
-  initialPacks?: { name: string; size: number }[];
+  initialPacks?: { id?: string; name: string; size: number }[];
+  onChange?: (packs: { id: string; name: string; size: number }[]) => void;
   t: Dictionary["stock"];
 };
 
-export default function PacksEditor({ initialPacks = [], t }: Props) {
+export default function PacksEditor({ initialPacks = [], onChange, t }: Props) {
   const [packs, setPacks] = useState<PackRow[]>(
     initialPacks.map((p) => ({ name: p.name, size: String(p.size) }))
   );
 
+  function notifyChange(newPacks: PackRow[]) {
+    if (onChange) {
+      const validPacks = newPacks
+        .filter((p) => p.name.trim().length > 0 && p.size !== "")
+        .map((p, idx) => ({ id: `pack_${idx}`, name: p.name.trim(), size: Number(p.size) }));
+      onChange(validPacks);
+    }
+  }
+
   function addRow() {
-    setPacks((prev) => [...prev, { name: "", size: "" }]);
+    setPacks((prev) => {
+      const next = [...prev, { name: "", size: "" }];
+      notifyChange(next);
+      return next;
+    });
   }
 
   function updateRow(index: number, field: "name" | "size", value: string) {
-    setPacks((prev) => prev.map((p, i) => (i === index ? { ...p, [field]: value } : p)));
+    setPacks((prev) => {
+      const next = prev.map((p, i) => (i === index ? { ...p, [field]: value } : p));
+      notifyChange(next);
+      return next;
+    });
   }
 
   function removeRow(index: number) {
-    setPacks((prev) => prev.filter((_, i) => i !== index));
+    setPacks((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      notifyChange(next);
+      return next;
+    });
   }
 
   const packsJson = JSON.stringify(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import Link from "next/link";
 import { updateStockItem } from "@/app/actions/stock";
 import PacksEditor from "@/app/components/PacksEditor";
@@ -39,8 +39,37 @@ const PRESET_UNITS = [
 export default function EditStockItemForm({ item, t, lang }: Props) {
   const [state, action, pending] = useActionState(updateStockItem, undefined);
   const isPreset = PRESET_UNITS.slice(0, -1).includes(item.unit);
+
+  // Controlled form states to track modifications
+  const [name, setName] = useState(item.name);
   const [selectedUnit, setSelectedUnit] = useState(isPreset ? item.unit : "custom");
   const [customUnit, setCustomUnit] = useState(isPreset ? "" : item.unit);
+  const [costPrice, setCostPrice] = useState(String(item.cost_price));
+  const [sellPrice, setSellPrice] = useState(String(item.sell_price));
+  const [lowStockThreshold, setLowStockThreshold] = useState(String(item.low_stock_threshold));
+  const [packs, setPacks] = useState(item.stock_item_packs);
+
+  // Derive effective unit string
+  const effectiveUnit = selectedUnit === "custom" ? customUnit.trim() : selectedUnit;
+
+  // Determine if any value has changed from the initial record
+  const isDirty = useMemo(() => {
+    if (name.trim() !== item.name.trim()) return true;
+    if (effectiveUnit !== item.unit) return true;
+
+    const numCost = parseFloat(costPrice);
+    if (!isNaN(numCost) && numCost !== item.cost_price) return true;
+
+    const numSell = parseFloat(sellPrice);
+    if (!isNaN(numSell) && numSell !== item.sell_price) return true;
+
+    const numThresh = parseInt(lowStockThreshold, 10);
+    if (!isNaN(numThresh) && numThresh !== item.low_stock_threshold) return true;
+
+    if (JSON.stringify(packs) !== JSON.stringify(item.stock_item_packs)) return true;
+
+    return false;
+  }, [name, effectiveUnit, costPrice, sellPrice, lowStockThreshold, packs, item]);
 
   return (
     <form action={action} className="flex-grow flex flex-col">
@@ -56,7 +85,8 @@ export default function EditStockItemForm({ item, t, lang }: Props) {
               id="name"
               name="name"
               type="text"
-              defaultValue={item.name}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder={t.itemNamePlaceholder}
               className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] placeholder:text-zinc-400 font-medium"
             />
@@ -105,7 +135,8 @@ export default function EditStockItemForm({ item, t, lang }: Props) {
                 type="number"
                 inputMode="numeric"
                 min="0"
-                defaultValue={item.cost_price}
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
                 className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] font-medium"
               />
             </div>
@@ -119,7 +150,8 @@ export default function EditStockItemForm({ item, t, lang }: Props) {
                 type="number"
                 inputMode="numeric"
                 min="0"
-                defaultValue={item.sell_price}
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
                 className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] font-medium"
               />
             </div>
@@ -135,7 +167,8 @@ export default function EditStockItemForm({ item, t, lang }: Props) {
               type="number"
               inputMode="numeric"
               min="0"
-              defaultValue={item.low_stock_threshold}
+              value={lowStockThreshold}
+              onChange={(e) => setLowStockThreshold(e.target.value)}
               className="w-full h-14 px-4 bg-zinc-100 border-none rounded-2xl focus:ring-2 focus:ring-[#18181b] focus:bg-white transition-all text-[#18181b] font-medium"
             />
             <p className="text-zinc-400 text-xs mt-2 px-1">{t.lowStockThresholdSub}</p>
@@ -158,7 +191,7 @@ export default function EditStockItemForm({ item, t, lang }: Props) {
           </Link>
         </div>
 
-        <PacksEditor initialPacks={item.stock_item_packs} t={t} />
+        <PacksEditor initialPacks={packs} onChange={setPacks} t={t} />
 
         {state?.message && (
           <p className="text-rose-600 text-sm text-center bg-rose-50 border border-rose-100 px-4 py-3 rounded-2xl">
@@ -170,8 +203,8 @@ export default function EditStockItemForm({ item, t, lang }: Props) {
       <footer className="p-6 bg-white border-t border-zinc-100">
         <button
           type="submit"
-          disabled={pending}
-          className="w-full py-4 bg-[#18181b] hover:bg-[#27272a] text-white rounded-2xl font-extrabold text-base shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          disabled={pending || !isDirty}
+          className="w-full py-4 bg-[#18181b] hover:bg-[#27272a] text-white rounded-2xl font-extrabold text-base shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
           <span className="material-symbols-outlined text-[#a3e635]">save</span>
           {pending ? t.saving : t.saveChanges}
