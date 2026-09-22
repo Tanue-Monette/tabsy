@@ -19,7 +19,7 @@ export const getCustomers = cache(async () => {
 
   const { data } = await supabase
     .from("customers")
-    .select("id, name, phone, balance")
+    .select("id, name, phone, balance, max_debt_limit")
     .eq("merchant_id", session.merchantId)
     .order("name");
 
@@ -31,7 +31,7 @@ export const getCustomer = cache(async (customerId: string) => {
 
   const { data } = await supabase
     .from("customers")
-    .select("id, name, phone, balance, created_at")
+    .select("id, name, phone, balance, max_debt_limit, created_at")
     .eq("id", customerId)
     .eq("merchant_id", session.merchantId)
     .single();
@@ -69,9 +69,9 @@ export async function addDebtWithCustomer(
   const session = await requireSession();
 
   const raw = {
-    customer_id: formData.get("customer_id") as string || undefined,
-    new_name: formData.get("new_name") as string || undefined,
-    new_phone: formData.get("new_phone") as string || undefined,
+    customer_id: (formData.get("customer_id") as string) || undefined,
+    new_name: (formData.get("new_name") as string) || undefined,
+    new_phone: (formData.get("new_phone") as string) || undefined,
     amount: formData.get("amount"),
     description: formData.get("description"),
   };
@@ -88,30 +88,38 @@ export async function addDebtWithCustomer(
     return { errors: { new_name: ["Please select a customer or enter a name."] } };
   }
 
-  // Check merchant max debt limit settings
+  // Check debt limit: client-specific max_debt_limit takes priority; falls back to merchant global limit
   const { data: merchantData } = await supabase
     .from("merchants")
     .select("settings")
     .eq("id", session.merchantId)
     .single();
 
-  const maxDebtLimit = Number(merchantData?.settings?.max_debt_limit ?? 0);
+  const globalMaxDebt = Number(
+    (merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0
+  );
 
   let currentBalance = 0;
+  let customCustomerLimit: number | null = null;
+
   if (customer_id) {
     const { data: existingCustomer } = await supabase
       .from("customers")
-      .select("balance")
+      .select("balance, max_debt_limit")
       .eq("id", customer_id)
       .single();
     currentBalance = Number(existingCustomer?.balance ?? 0);
+    customCustomerLimit =
+      existingCustomer?.max_debt_limit != null ? Number(existingCustomer.max_debt_limit) : null;
   }
 
-  if (maxDebtLimit > 0 && currentBalance + amount > maxDebtLimit) {
+  const effectiveMaxDebt = customCustomerLimit ?? globalMaxDebt;
+
+  if (effectiveMaxDebt > 0 && currentBalance + amount > effectiveMaxDebt) {
     return {
       errors: {
         amount: [
-          `Debt limit exceeded! Maximum allowed debt is ${maxDebtLimit.toLocaleString()} FCFA (Current debt: ${currentBalance.toLocaleString()} FCFA).`,
+          `Debt limit exceeded! Maximum allowed debt is ${effectiveMaxDebt.toLocaleString()} FCFA (Current debt: ${currentBalance.toLocaleString()} FCFA).`,
         ],
       },
     };
@@ -164,3 +172,37 @@ export async function addDebtWithCustomer(
   revalidatePath("/dashboard");
   redirect(`/customers/${resolvedCustomerId}`);
 }
+
+export async function updateCustomerMaxDebtLimit(
+  _state: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const session = await requireSession();
+
+  const customer_id = String(formData.get("customer_id") ?? "");
+  const is_custom = formData.get("is_custom") === "true";
+  const rawLimit = formData.get("max_debt_limit");
+
+  if (!customer_id) return { message: "Invalid customer." };
+
+  let max_debt_limit: number | null = null;
+  if (is_custom && rawLimit !== null && rawLimit !== "") {
+    const val = Number(rawLimit);
+    max_debt_limit = isNaN(val) || val < 0 ? 0 : val;
+  }
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ max_debt_limit })
+    .eq("id", customer_id)
+    .eq("merchant_id", session.merchantId);
+
+  if (error) {
+    return { message: "Failed to update debt limit." };
+  }
+
+  revalidatePath(`/customers/${customer_id}`);
+  revalidatePath("/customers");
+  return { message: "Client debt limit updated successfully." };
+}
+

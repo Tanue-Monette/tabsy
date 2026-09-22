@@ -55,7 +55,7 @@ export default async function MerchantDetailPage({
 
         <div className="group opacity-100">
           {/* We wrap MerchantActions with opacity-100 because it defaults to opacity-0 group-hover:opacity-100 in table context */}
-          <MerchantActions merchantId={merchant.id} currentStatus={merchant.status as "active" | "suspended"} />
+          <MerchantActions merchantId={merchant.id} shopName={merchant.shop_name} currentStatus={merchant.status as "active" | "suspended"} />
         </div>
       </div>
 

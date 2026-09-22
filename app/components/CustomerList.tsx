@@ -37,9 +37,7 @@ export default function CustomerList({ customers, lang }: { customers: Customer[
     const loadLocalCustomers = async () => {
       try {
         const local = await db.cachedCustomers.toArray();
-        if (local.length > 0) {
-          setAllCustomers(local);
-        }
+        setAllCustomers(local);
       } catch (err) {
         console.error("Dexie read error:", err);
       }

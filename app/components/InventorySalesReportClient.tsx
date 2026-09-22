@@ -243,7 +243,7 @@ export default function InventorySalesReportClient({
               className="flex-1 sm:flex-initial px-4 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-2xl font-bold text-xs text-[#18181b] flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-rose-600 text-base">picture_as_pdf</span>
-              {t?.exportPdf ?? "Export PDF"}
+
             </button>
 
             <button
@@ -253,7 +253,7 @@ export default function InventorySalesReportClient({
               className="flex-1 sm:flex-initial px-5 py-2.5 bg-[#18181b] text-white hover:bg-[#27272a] rounded-2xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span className="material-symbols-outlined text-[#a3e635] text-base">print</span>
-              {t?.print ?? "Print"}
+
             </button>
           </div>
         </div>
@@ -318,7 +318,7 @@ export default function InventorySalesReportClient({
       )}
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         {/* Total Items Sold */}
         <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-zinc-200/80">
           <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 border border-emerald-100">
@@ -391,7 +391,7 @@ export default function InventorySalesReportClient({
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {/* Cash */}
           <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-200/60 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
@@ -447,6 +447,27 @@ export default function InventorySalesReportClient({
               </p>
               <span className="text-[10px] font-semibold text-orange-700">FCFA</span>
             </div>
+          </div>
+        </div>
+
+        {/* Total Money Sold (Cash + MoMo + OM) Card */}
+        <div className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 rounded-2xl p-4 text-white flex items-center justify-between border border-zinc-700/60 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#a3e635]/20 text-[#a3e635] flex items-center justify-center font-bold border border-[#a3e635]/30">
+              <span className="material-symbols-outlined text-lg">payments</span>
+            </div>
+            <div>
+              <p className="text-[10px] font-extrabold text-[#a3e635] uppercase tracking-wider">
+                {t?.totalMoneySoldPeriod ?? "Total Money Sold"} ({periodLabel})
+              </p>
+              <p className="text-[11px] text-zinc-300 font-medium">
+                Cash ({currentCash.toLocaleString()}) + MoMo ({currentMtn.toLocaleString()}) + OM ({currentOrange.toLocaleString()})
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-lg sm:text-xl font-black text-white">{currentPeriodTotal.toLocaleString()}</span>
+            <span className="text-xs font-bold text-[#a3e635] ml-1">FCFA</span>
           </div>
         </div>
       </div>

@@ -64,7 +64,7 @@ export default async function AdminMerchantsPage() {
                       {new Date(merchant.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <MerchantActions merchantId={merchant.id} currentStatus={merchant.status as "active" | "suspended"} />
+                      <MerchantActions merchantId={merchant.id} shopName={merchant.shop_name} currentStatus={merchant.status as "active" | "suspended"} />
                     </td>
                   </tr>
                 ))

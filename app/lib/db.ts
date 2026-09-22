@@ -23,6 +23,7 @@ export interface CachedCustomer {
   name: string;
   phone: string | null;
   balance: number;
+  max_debt_limit?: number | null;
   isPending?: boolean;
   updatedAt?: number;
 }

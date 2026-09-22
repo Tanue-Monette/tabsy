@@ -40,9 +40,7 @@ export default function StockList({
     const loadLocalStock = async () => {
       try {
         const local = await db.cachedStockItems.toArray();
-        if (local.length > 0) {
-          setAllStockItems(local);
-        }
+        setAllStockItems(local);
       } catch (err) {
         console.error("Dexie read error:", err);
       }
