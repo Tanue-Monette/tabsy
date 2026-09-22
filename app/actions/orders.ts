@@ -117,21 +117,26 @@ export async function createOrder(
       .eq("id", session.merchantId)
       .single();
 
-    const maxDebtLimit = Number((merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0);
+    const globalMaxDebt = Number(
+      (merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0
+    );
 
-    if (maxDebtLimit > 0) {
-      const { data: existingCustomer } = await supabase
-        .from("customers")
-        .select("balance")
-        .eq("id", resolvedCustomerId)
-        .single();
-      const currentBalance = Number(existingCustomer?.balance ?? 0);
+    const { data: existingCustomer } = await supabase
+      .from("customers")
+      .select("balance, max_debt_limit")
+      .eq("id", resolvedCustomerId)
+      .single();
 
-      if (currentBalance + orderTotal > maxDebtLimit) {
-        return {
-          message: `Debt limit exceeded! Maximum allowed debt is ${maxDebtLimit.toLocaleString()} FCFA (current: ${currentBalance.toLocaleString()} FCFA).`,
-        };
-      }
+    const currentBalance = Number(existingCustomer?.balance ?? 0);
+    const customCustomerLimit =
+      existingCustomer?.max_debt_limit != null ? Number(existingCustomer.max_debt_limit) : null;
+
+    const effectiveMaxDebt = customCustomerLimit ?? globalMaxDebt;
+
+    if (effectiveMaxDebt > 0 && currentBalance + orderTotal > effectiveMaxDebt) {
+      return {
+        message: `Debt limit exceeded! Maximum allowed debt for this client is ${effectiveMaxDebt.toLocaleString()} FCFA (current: ${currentBalance.toLocaleString()} FCFA).`,
+      };
     }
 
     // Call RPC for atomic order + stock deduction + debt balance increment
@@ -578,21 +583,26 @@ export async function setOrderAsDebt(
     .eq("id", session.merchantId)
     .single();
 
-  const maxDebtLimit = Number((merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0);
+  const globalMaxDebt = Number(
+    (merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0
+  );
 
-  if (maxDebtLimit > 0) {
-    const { data: customer } = await supabase
-      .from("customers")
-      .select("balance")
-      .eq("id", resolvedCustomerId)
-      .single();
-    const currentBalance = Number(customer?.balance ?? 0);
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("balance, max_debt_limit")
+    .eq("id", resolvedCustomerId)
+    .single();
 
-    if (currentBalance + order.total_amount > maxDebtLimit) {
-      return {
-        message: `Debt limit exceeded! Maximum allowed debt is ${maxDebtLimit.toLocaleString()} FCFA (current: ${currentBalance.toLocaleString()} FCFA).`,
-      };
-    }
+  const currentBalance = Number(customer?.balance ?? 0);
+  const customCustomerLimit =
+    customer?.max_debt_limit != null ? Number(customer.max_debt_limit) : null;
+
+  const effectiveMaxDebt = customCustomerLimit ?? globalMaxDebt;
+
+  if (effectiveMaxDebt > 0 && currentBalance + order.total_amount > effectiveMaxDebt) {
+    return {
+      message: `Debt limit exceeded! Maximum allowed debt for this client is ${effectiveMaxDebt.toLocaleString()} FCFA (current: ${currentBalance.toLocaleString()} FCFA).`,
+    };
   }
 
   const { error } = await supabase.rpc("convert_order_to_debt", {

@@ -44,17 +44,19 @@ export default async function StockHistoryPage({
               </h1>
             </div>
           </div>
+        </div>
+      </header>
+
+      <main className="px-6 pt-6">
+        <div className="flex justify-end mb-4">
           <Link
             href={`/${lang}/stock/replenish`}
-            className="flex items-center gap-1.5 bg-zinc-800/80 hover:bg-zinc-800 text-white font-bold text-xs px-3.5 py-2 rounded-xl active:scale-95 transition-all border border-zinc-700/40"
+            className="flex w-fit items-center gap-1.5 bg-zinc-800/80 hover:bg-zinc-800 text-white font-bold text-xs px-3.5 py-2 rounded-xl active:scale-95 transition-all border border-zinc-700/40"
           >
             <span className="material-symbols-outlined text-sm text-amber-400">warning</span>
             {t.stock.replenishmentList}
           </Link>
         </div>
-      </header>
-
-      <main className="px-6 pt-6">
         <StockHistoryClient
           movements={movements}
           merchantName={merchant?.merchant_name}

@@ -125,3 +125,77 @@ export async function deleteMerchant(id: string) {
 
   revalidatePath("/admin/merchants");
 }
+
+export async function reinitializeMerchantAccount(id: string) {
+  const session = await getAdminSession();
+  if (!session) throw new Error("Unauthorized");
+
+  // Fetch merchant to get details for system logging
+  const { data: merchant, error: fetchErr } = await supabase
+    .from("merchants")
+    .select("id, shop_name, phone")
+    .eq("id", id)
+    .single();
+
+  if (fetchErr || !merchant) {
+    throw new Error("Merchant not found");
+  }
+
+  // 1. Clean Stock Movements
+  await supabase.from("stock_movements").delete().eq("merchant_id", id);
+
+  // 2. Fetch Stock Items & Clean Packs and Items
+  const { data: stockItems } = await supabase
+    .from("stock_items")
+    .select("id")
+    .eq("merchant_id", id);
+
+  if (stockItems && stockItems.length > 0) {
+    const itemIds = stockItems.map((i) => i.id);
+    await supabase.from("stock_item_packs").delete().in("stock_item_id", itemIds);
+  }
+  await supabase.from("stock_items").delete().eq("merchant_id", id);
+
+  // 3. Fetch Orders & Clean Order Items and Orders
+  const { data: orders } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("merchant_id", id);
+
+  if (orders && orders.length > 0) {
+    const orderIds = orders.map((o) => o.id);
+    await supabase.from("order_items").delete().in("order_id", orderIds);
+  }
+  await supabase.from("orders").delete().eq("merchant_id", id);
+
+  // 4. Clean Transactions
+  await supabase.from("transactions").delete().eq("merchant_id", id);
+
+  // 5. Clean Customers
+  await supabase.from("customers").delete().eq("merchant_id", id);
+
+  // 6. Clean Daily Registers & Sales Aggregates
+  await supabase.from("daily_registers").delete().eq("merchant_id", id);
+  await supabase.from("daily_sales_aggregates").delete().eq("merchant_id", id);
+
+  // 7. Log System Event
+  await logSystemEvent({
+    actor_type: "admin",
+    actor_id: session.adminId,
+    action: "reinitialize_merchant_account",
+    entity_type: "merchant",
+    entity_id: id,
+    metadata: {
+      shop_name: merchant.shop_name,
+      phone: merchant.phone,
+      reinitialized_at: new Date().toISOString(),
+    },
+  });
+
+  revalidatePath("/admin/merchants");
+  revalidatePath(`/admin/merchants/${id}`);
+  revalidatePath("/admin/logs");
+
+  return { success: true, message: `Account for ${merchant.shop_name} has been reinitialized.` };
+}
+

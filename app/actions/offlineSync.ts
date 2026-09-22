@@ -24,7 +24,9 @@ export async function processOfflineQueueItem(
       .eq("id", session.merchantId)
       .single();
 
-    const maxDebtLimit = Number((merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0);
+    const globalMaxDebt = Number(
+      (merchantData?.settings as Record<string, unknown> | null)?.max_debt_limit ?? 0
+    );
 
     if (type === "add_debt_with_customer") {
       let resolvedCustomerId = payload.customer_id;
@@ -51,16 +53,21 @@ export async function processOfflineQueueItem(
         return { success: false, message: "Missing customer identifier." };
       }
 
-      if (maxDebtLimit > 0) {
-        const { data: custData } = await supabase
-          .from("customers")
-          .select("balance")
-          .eq("id", resolvedCustomerId)
-          .single();
-        const currentBal = Number(custData?.balance ?? 0);
-        if (currentBal + payload.amount > maxDebtLimit) {
-          return { success: false, message: `Debt limit exceeded (${maxDebtLimit.toLocaleString()} FCFA max)` };
-        }
+      const { data: custData } = await supabase
+        .from("customers")
+        .select("balance, max_debt_limit")
+        .eq("id", resolvedCustomerId)
+        .single();
+
+      const currentBal = Number(custData?.balance ?? 0);
+      const customLimit = custData?.max_debt_limit != null ? Number(custData.max_debt_limit) : null;
+      const effectiveLimit = customLimit ?? globalMaxDebt;
+
+      if (effectiveLimit > 0 && currentBal + payload.amount > effectiveLimit) {
+        return {
+          success: false,
+          message: `Debt limit exceeded (${effectiveLimit.toLocaleString()} FCFA max)`,
+        };
       }
 
       const { error: txError } = await supabase.from("transactions").insert({
@@ -87,16 +94,21 @@ export async function processOfflineQueueItem(
         return { success: false, message: "Missing customer_id." };
       }
 
-      if (maxDebtLimit > 0) {
-        const { data: custData } = await supabase
-          .from("customers")
-          .select("balance")
-          .eq("id", payload.customer_id)
-          .single();
-        const currentBal = Number(custData?.balance ?? 0);
-        if (currentBal + payload.amount > maxDebtLimit) {
-          return { success: false, message: `Debt limit exceeded (${maxDebtLimit.toLocaleString()} FCFA max)` };
-        }
+      const { data: custData } = await supabase
+        .from("customers")
+        .select("balance, max_debt_limit")
+        .eq("id", payload.customer_id)
+        .single();
+
+      const currentBal = Number(custData?.balance ?? 0);
+      const customLimit = custData?.max_debt_limit != null ? Number(custData.max_debt_limit) : null;
+      const effectiveLimit = customLimit ?? globalMaxDebt;
+
+      if (effectiveLimit > 0 && currentBal + payload.amount > effectiveLimit) {
+        return {
+          success: false,
+          message: `Debt limit exceeded (${effectiveLimit.toLocaleString()} FCFA max)`,
+        };
       }
 
       const { error: txError } = await supabase.from("transactions").insert({

@@ -142,15 +142,14 @@ export default function StockHistoryClient({
       {/* Filter Tabs & Search Bar */}
       <div className="no-print space-y-4">
         {/* Type Filter Tabs */}
-        <div className="bg-zinc-200/80 p-1.5 rounded-3xl flex gap-1 border border-zinc-300/50">
+        <div className="bg-zinc-200/80 p-1.5 rounded-3xl grid grid-cols-2 md:grid-cols-4 gap-1 border border-zinc-300/50">
           <button
             type="button"
             onClick={() => handleFilterChange("all")}
-            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              filterType === "all"
-                ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
-                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-300/50"
-            }`}
+            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${filterType === "all"
+              ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
+              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-300/50"
+              }`}
           >
             <span className="material-symbols-outlined text-base">list_alt</span>
             {t?.allMovements ?? "All Movements"}
@@ -159,11 +158,10 @@ export default function StockHistoryClient({
           <button
             type="button"
             onClick={() => handleFilterChange("restock")}
-            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              filterType === "restock"
-                ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
-                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-300/50"
-            }`}
+            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${filterType === "restock"
+              ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
+              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-300/50"
+              }`}
           >
             <span className="material-symbols-outlined text-base text-emerald-400">add_shopping_cart</span>
             {t?.restocksOnly ?? "Restocks"}
@@ -172,11 +170,10 @@ export default function StockHistoryClient({
           <button
             type="button"
             onClick={() => handleFilterChange("adjustment")}
-            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              filterType === "adjustment"
-                ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
-                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-300/50"
-            }`}
+            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${filterType === "adjustment"
+              ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
+              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-300/50"
+              }`}
           >
             <span className="material-symbols-outlined text-base text-amber-400">tune</span>
             {t?.adjustmentsOnly ?? "Adjustments"}
@@ -185,11 +182,10 @@ export default function StockHistoryClient({
           <button
             type="button"
             onClick={() => handleFilterChange("sale")}
-            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              filterType === "sale"
-                ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
-                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-300/50"
-            }`}
+            className={`flex-1 py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${filterType === "sale"
+              ? "bg-[#18181b] text-[#a3e635] shadow-md shadow-[#18181b]/10"
+              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-300/50"
+              }`}
           >
             <span className="material-symbols-outlined text-base text-blue-400">sell</span>
             {t?.salesOnly ?? "Sales"}
@@ -247,7 +243,7 @@ export default function StockHistoryClient({
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         {/* Total Restock Investment */}
         <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-zinc-200/80">
           <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 border border-emerald-100">
@@ -381,13 +377,12 @@ export default function StockHistoryClient({
 
                       {/* Quantity Change */}
                       <td
-                        className={`py-4 px-5 text-right font-black ${
-                          m.quantity_change > 0
-                            ? "text-emerald-600"
-                            : m.quantity_change < 0
+                        className={`py-4 px-5 text-right font-black ${m.quantity_change > 0
+                          ? "text-emerald-600"
+                          : m.quantity_change < 0
                             ? "text-rose-600"
                             : "text-zinc-600"
-                        }`}
+                          }`}
                       >
                         {m.quantity_change > 0 ? `+${m.quantity_change}` : m.quantity_change}{" "}
                         <span className="text-[10px] text-zinc-400 font-normal">{m.item_unit}</span>

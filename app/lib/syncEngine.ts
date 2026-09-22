@@ -27,7 +27,9 @@ export async function cacheOnlineStockItems(items: Array<CachedStockItem>) {
       ...i,
       updatedAt: Date.now(),
     }));
-    await db.cachedStockItems.bulkPut(serverItems);
+    if (serverItems.length > 0) {
+      await db.cachedStockItems.bulkPut(serverItems);
+    }
     notifyListeners();
   } catch (err) {
     console.error("Failed to cache online stock items:", err);
@@ -40,7 +42,9 @@ export async function cacheOnlineStockItems(items: Array<CachedStockItem>) {
 export async function cacheOnlineCustomers(customers: Array<{ id: string; name: string; phone: string | null; balance: number }>) {
   if (typeof window === "undefined") return;
   try {
-    const pendingCustomers = await db.cachedCustomers.filter((c) => !!c.isPending).toArray();
+    const pendingCustomers = customers.length > 0
+      ? await db.cachedCustomers.filter((c) => !!c.isPending).toArray()
+      : [];
     await db.cachedCustomers.clear();
     const serverCustomers: CachedCustomer[] = customers.map((c) => ({
       id: c.id,
@@ -50,7 +54,10 @@ export async function cacheOnlineCustomers(customers: Array<{ id: string; name: 
       isPending: false,
       updatedAt: Date.now(),
     }));
-    await db.cachedCustomers.bulkPut([...serverCustomers, ...pendingCustomers]);
+    const allToPut = [...serverCustomers, ...pendingCustomers];
+    if (allToPut.length > 0) {
+      await db.cachedCustomers.bulkPut(allToPut);
+    }
     notifyListeners();
   } catch (err) {
     console.error("Failed to cache online customers:", err);
@@ -63,18 +70,42 @@ export async function cacheOnlineCustomers(customers: Array<{ id: string; name: 
 export async function cacheOnlineTransactions(transactions: Array<{ id: string; customer_id: string; type: "debt" | "payment"; amount: number; description?: string | null; method?: string | null; created_at: string }>) {
   if (typeof window === "undefined") return;
   try {
-    const pendingTxs = await db.cachedTransactions.filter((t) => !!t.isPending).toArray();
+    const pendingTxs = transactions.length > 0
+      ? await db.cachedTransactions.filter((t) => !!t.isPending).toArray()
+      : [];
     await db.cachedTransactions.clear();
     const serverTxs: CachedTransaction[] = transactions.map((t) => ({
       ...t,
       isPending: false,
     }));
-    await db.cachedTransactions.bulkPut([...serverTxs, ...pendingTxs]);
+    const allToPut = [...serverTxs, ...pendingTxs];
+    if (allToPut.length > 0) {
+      await db.cachedTransactions.bulkPut(allToPut);
+    }
     notifyListeners();
   } catch (err) {
     console.error("Failed to cache online transactions:", err);
   }
 }
+
+/**
+ * Clears all local IndexedDB cached stores and offline sync queue.
+ * Useful when a merchant account is reinitialized or reset.
+ */
+export async function clearLocalDexieDB() {
+  if (typeof window === "undefined") return;
+  try {
+    await db.cachedStockItems.clear();
+    await db.cachedCustomers.clear();
+    await db.cachedTransactions.clear();
+    await db.merchantSettings.clear();
+    await db.offlineSyncQueue.clear();
+    notifyListeners();
+  } catch (err) {
+    console.error("Failed to clear local Dexie DB:", err);
+  }
+}
+
 
 /**
  * Queue an offline item AND optimistically update local Dexie stores so the UI displays it immediately!

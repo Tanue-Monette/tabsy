@@ -26,10 +26,17 @@ export default async function StockPage({
     getProfitStats(),
   ]);
 
-  // Capital tied up in current inventory — at COST, not sell price. This is
-  // what the merchant actually spent, not what they'd get if they sold
-  // everything. It falls as stock sells, rises when they restock.
+  // Capital tied up in current inventory — at COST, not sell price.
   const stockCapitalValue = items.reduce((sum, i) => sum + i.quantity * i.cost_price, 0);
+
+  // Potential profit if all current inventory is sold out
+  const potentialProfit = items.reduce(
+    (sum, i) => sum + i.quantity * Math.max(0, i.sell_price - i.cost_price),
+    0
+  );
+
+  // Total stock money: Stock Value (Cost) + Potential Profit (= total potential retail revenue)
+  const totalStockMoney = stockCapitalValue + potentialProfit;
 
   return (
     <div className="bg-[#f8f9fa] min-h-screen pb-32">
@@ -46,7 +53,19 @@ export default async function StockPage({
               <h1 className="text-xl font-bold text-white leading-tight">{t.stock.inventoryAndSales}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+        </div>
+      </header>
+
+      <main className="px-6 space-y-6 pt-6">
+        {/* Sales Performance KPIs (Day, Week, Month) */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{t.stock.salesPerformance}</h2>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 uppercase">
+              {t.stock.livePosRevenue}
+            </span>
+          </div>
+          <div className="flex justify-end items-center gap-2">
             <Link
               href={`/${lang}/stock/history`}
               className="flex items-center gap-1.5 bg-zinc-800/80 hover:bg-zinc-800 text-white font-bold text-xs px-3.5 py-2 rounded-xl active:scale-95 transition-all border border-zinc-700/40"
@@ -62,20 +81,8 @@ export default async function StockPage({
               {t.order.newOrder}
             </Link>
           </div>
-        </div>
-      </header>
 
-      <main className="px-6 space-y-6 pt-6">
-        {/* Sales Performance KPIs (Day, Week, Month) */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{t.stock.salesPerformance}</h2>
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 uppercase">
-              {t.stock.livePosRevenue}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             <div className="bg-white rounded-3xl p-4 shadow-sm border border-zinc-200/80 flex flex-col justify-between">
               <div>
                 <span className="material-symbols-outlined text-emerald-600 text-lg mb-1">today</span>
@@ -112,11 +119,11 @@ export default async function StockPage({
 
           {/* Payment Method Breakdown Card for Today's Sales */}
           <div className="bg-white rounded-3xl p-5 shadow-sm border border-zinc-200/80 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="w-full flex flex-wrap gap-2 sm:flex-nowrap items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-zinc-700 text-lg">account_balance_wallet</span>
                 <h3 className="text-xs font-extrabold text-[#18181b] uppercase tracking-wider">
-                  {t.stock.todaySalesBreakdown ?? "Today's Revenue Breakdown"}
+                  {t.stock.todaySalesBreakdown ?? "Today's Revenue"}
                 </h3>
               </div>
               <span className="text-[10px] font-black text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-full">
@@ -124,7 +131,7 @@ export default async function StockPage({
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
               {/* Cash Card */}
               <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-200/60 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-2">
@@ -188,13 +195,36 @@ export default async function StockPage({
                 </div>
               </div>
             </div>
+
+            {/* Total Money Sold Today (Cash + MoMo + OM) Card */}
+            <div className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 rounded-2xl p-4 text-white flex flex-col md:flex-row items-start gap-2 justify-between border border-zinc-700/60 shadow-sm pt-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#a3e635]/20 text-[#a3e635] flex items-center justify-center font-bold border border-[#a3e635]/30">
+                  <span className="material-symbols-outlined text-lg">payments</span>
+                </div>
+                <div>
+                  <p className="text-[10px] font-extrabold text-[#a3e635] uppercase tracking-wider">
+                    {t.stock.totalMoneySoldToday ?? "Total Money Sold Today"}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-lg sm:text-xl font-black text-white">{salesStats.salesToday.toLocaleString()}</span>
+                <span className="text-xs font-bold text-[#a3e635] ml-1">FCFA</span>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Stock Capital (cost basis) vs Sales Month vs Profit */}
+        {/* Stock Capital (cost basis) vs Total Money (Stock + Potential Profit) vs Sales & Profit */}
         <StockValueCards
           capitalLabel={t.stock.totalStockAssetValue}
           capitalValue={stockCapitalValue}
+          totalStockMoneyLabel={t.stock.totalStockMoney}
+          totalStockMoneySubLabel={t.stock.totalStockMoneySub}
+          totalStockMoneyValue={totalStockMoney}
+          potentialProfitLabel={t.stock.potentialStockProfit}
+          potentialProfitValue={potentialProfit}
           salesMonthLabel={t.inventoryReport.thisMonth}
           salesMonthValue={salesStats.salesMonth}
           profitLabel={t.stock.profitThisMonth}

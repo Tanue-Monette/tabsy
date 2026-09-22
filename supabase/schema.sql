@@ -51,12 +51,13 @@ create table if not exists system_config (
 
 -- Customers table
 create table if not exists customers (
-  id          uuid primary key default gen_random_uuid(),
-  merchant_id uuid not null references merchants(id) on delete cascade,
-  name        text not null,
-  phone       text,
-  balance     numeric(12, 2) not null default 0,
-  created_at  timestamptz not null default now()
+  id             uuid primary key default gen_random_uuid(),
+  merchant_id    uuid not null references merchants(id) on delete cascade,
+  name           text not null,
+  phone          text,
+  balance        numeric(12, 2) not null default 0,
+  max_debt_limit numeric(12, 2),
+  created_at     timestamptz not null default now()
 );
 
 -- Transactions table
@@ -162,5 +163,9 @@ alter table daily_sales_aggregates enable row level security;
 
 create policy "daily_registers: service role only" on daily_registers for all using (false);
 create policy "daily_sales_aggregates: service role only" on daily_sales_aggregates for all using (false);
+
+-- Per-client Max Debt Limit column
+alter table customers add column if not exists max_debt_limit numeric(12, 2);
+
 
 
